@@ -899,6 +899,13 @@ export const ja: TranslationStructure = {
         noData: '使用データがありません',
     },
 
+    contextPanel: {
+        noSession: 'セッションを開いてファイルを閲覧',
+        searchPlaceholder: 'ファイルを検索...',
+        uploading: 'アップロード中...',
+        downloading: 'ダウンロード中...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name}さんから友達リクエストが届きました`,

@@ -65,11 +65,9 @@ export const DesktopLayout = React.memo(() => {
                     <Slot />
                 </View>
             </View>
-            {contextVisible && (
-                <View style={styles.contextPanel}>
-                    <ContextPanel />
-                </View>
-            )}
+            <View style={[styles.contextPanel, !contextVisible && styles.hidden]}>
+                <ContextPanel />
+            </View>
         </View>
     );
 });
@@ -115,5 +113,8 @@ const styles = StyleSheet.create((theme) => ({
         width: 300,
         borderLeftWidth: 1,
         borderLeftColor: theme.colors.divider,
+    },
+    hidden: {
+        display: 'none',
     },
 }));

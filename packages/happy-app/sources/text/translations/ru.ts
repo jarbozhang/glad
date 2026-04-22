@@ -919,6 +919,13 @@ export const ru: TranslationStructure = {
         noData: 'Данные об использовании недоступны',
     },
 
+    contextPanel: {
+        noSession: 'Откройте сессию для просмотра файлов',
+        searchPlaceholder: 'Поиск файлов...',
+        uploading: 'Загрузка...',
+        downloading: 'Скачивание...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name} отправил вам запрос в друзья`,

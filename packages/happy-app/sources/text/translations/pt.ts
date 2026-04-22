@@ -896,6 +896,13 @@ export const pt: TranslationStructure = {
         noData: 'Nenhum dado de uso disponível',
     },
 
+    contextPanel: {
+        noSession: 'Abra uma sessão para explorar arquivos',
+        searchPlaceholder: 'Pesquisar arquivos...',
+        uploading: 'Enviando...',
+        downloading: 'Baixando...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name} enviou-lhe um pedido de amizade`,

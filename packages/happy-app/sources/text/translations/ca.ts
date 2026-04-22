@@ -897,6 +897,13 @@ export const ca: TranslationStructure = {
         noData: "No hi ha dades d'ús disponibles",
     },
 
+    contextPanel: {
+        noSession: 'Obre una sessió per explorar fitxers',
+        searchPlaceholder: 'Cerca fitxers...',
+        uploading: 'Pujant...',
+        downloading: 'Baixant...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name} t'ha enviat una sol·licitud d'amistat`,

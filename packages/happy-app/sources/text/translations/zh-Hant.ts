@@ -897,6 +897,13 @@ export const zhHant: TranslationStructure = {
         noData: '暫無使用資料',
     },
 
+    contextPanel: {
+        noSession: '開啟一個會話以瀏覽檔案',
+        searchPlaceholder: '搜尋檔案...',
+        uploading: '上傳中...',
+        downloading: '下載中...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name} 向您傳送了好友請求`,

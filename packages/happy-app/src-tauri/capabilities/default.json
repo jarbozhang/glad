@@ -23,6 +23,9 @@
     "notification:allow-is-permission-granted",
     "notification:allow-request-permission",
     "notification:allow-notify",
-    "window-state:default"
+    "window-state:default",
+    "dialog:default",
+    "fs:allow-read-file",
+    "fs:allow-write-file"
   ]
 }

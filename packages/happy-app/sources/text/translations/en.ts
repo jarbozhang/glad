@@ -912,6 +912,13 @@ export const en: TranslationStructure = {
         noData: 'No usage data available',
     },
 
+    contextPanel: {
+        noSession: 'Open a session to browse files',
+        searchPlaceholder: 'Search files...',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name} sent you a friend request`,

@@ -898,6 +898,13 @@ export const zhHans: TranslationStructure = {
         noData: '暂无使用数据',
     },
 
+    contextPanel: {
+        noSession: '打开一个会话以浏览文件',
+        searchPlaceholder: '搜索文件...',
+        uploading: '上传中...',
+        downloading: '下载中...',
+    },
+
     feed: {
         // Feed notifications for friend requests and acceptances
         friendRequestFrom: ({ name }: { name: string }) => `${name} 向您发送了好友请求`,

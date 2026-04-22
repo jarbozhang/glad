@@ -8,6 +8,8 @@ pub fn run() {
     .plugin(tauri_plugin_http::init())
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_window_state::Builder::default().build())
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_fs::init())
     .invoke_handler(tauri::generate_handler![
       tray::update_tray_status,
       notifications::send_notification,
