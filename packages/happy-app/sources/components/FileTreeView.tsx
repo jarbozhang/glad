@@ -146,7 +146,12 @@ export const FileTreeView = React.memo(function FileTreeView({
         try {
             const res = await sessionGetDirectoryTree(sessionId, '.', 3);
             if (!res.success || !res.tree) {
-                throw new Error(res.error || 'Failed to load directory tree');
+                const raw = res.error || 'Failed to load directory tree';
+                const friendly = raw.includes('RPC call failed')
+                    ? 'Session is offline. Start the CLI to browse files.'
+                    : raw;
+                setError(friendly);
+                return;
             }
             const rootChildren = res.tree.children ? filterTree(res.tree.children) : [];
             setTree(sortNodes(rootChildren));
@@ -161,8 +166,9 @@ export const FileTreeView = React.memo(function FileTreeView({
             };
             markLoaded(rootChildren);
         } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Unknown error';
-            setError(msg);
+            const raw = e instanceof Error ? e.message : 'Unknown error';
+            console.warn('[FileTreeView] loadTree error:', raw);
+            setError('Failed to load files');
         } finally {
             setInitialLoading(false);
         }
@@ -179,7 +185,11 @@ export const FileTreeView = React.memo(function FileTreeView({
         try {
             const res = await sessionListDirectory(sessionId, dirPath);
             if (!res.success || !res.entries) {
-                Modal.alert('Error', res.error || 'Failed to load directory');
+                const raw = res.error || 'Failed to load directory';
+                const friendly = raw.includes('RPC call failed')
+                    ? 'Session is offline'
+                    : raw;
+                Modal.alert('Error', friendly, [{ text: 'OK', style: 'cancel' }]);
                 return;
             }
             loadedDirsRef.current.add(dirPath);
