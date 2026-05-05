@@ -28,5 +28,6 @@ tauri-plugin-notification = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
-keyring = { version = "3", features = ["apple-native", "windows-native", "linux-native"] }
 rfd = "0.15"
+tauri-plugin-localhost = "2"
+portpicker = "0.1.1"

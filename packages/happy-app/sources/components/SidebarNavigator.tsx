@@ -67,6 +67,10 @@ export const SidebarNavigator = React.memo(() => {
         );
     }
 
+    if (!auth.isAuthenticated) {
+        return <Slot />;
+    }
+
     return (
         <Drawer
             screenOptions={drawerNavigationOptions}
