@@ -13,11 +13,6 @@ vi.mock('expo-secure-store', () => ({
     deleteItemAsync: vi.fn(),
 }));
 
-const mockInvoke = vi.fn();
-vi.mock('@tauri-apps/api/core', () => ({
-    invoke: (...args: any[]) => mockInvoke(...args),
-}));
-
 // Setup localStorage mock
 const localStorageData = new Map<string, string>();
 (global as any).localStorage = {
@@ -26,104 +21,97 @@ const localStorageData = new Map<string, string>();
     removeItem: (key: string) => localStorageData.delete(key),
 };
 
+// Mock Web Crypto API for AES-GCM
+const mockEncrypt = vi.fn();
+const mockDecrypt = vi.fn();
+const mockImportKey = vi.fn();
+const mockDeriveKey = vi.fn();
+vi.stubGlobal('crypto', {
+    subtle: {
+        importKey: mockImportKey,
+        deriveKey: mockDeriveKey,
+        encrypt: mockEncrypt,
+        decrypt: mockDecrypt,
+    },
+    getRandomValues: (arr: Uint8Array) => {
+        for (let i = 0; i < arr.length; i++) arr[i] = i;
+        return arr;
+    },
+});
+vi.stubGlobal('btoa', (str: string) => Buffer.from(str, 'binary').toString('base64'));
+vi.stubGlobal('atob', (str: string) => Buffer.from(str, 'base64').toString('binary'));
+
 // Tauri environment
 (global as any).window = { __TAURI_INTERNALS__: {} };
 
-import { TokenStorage, MIGRATION_FLAG } from './tokenStorage';
+import { TokenStorage } from './tokenStorage';
 
-describe('tokenStorage (Tauri keychain path)', () => {
+describe('tokenStorage (Tauri encrypted localStorage)', () => {
+    const testCreds = { token: 't1', secret: 's1' };
+    const testCredsJson = JSON.stringify(testCreds);
+
     beforeEach(() => {
-        mockInvoke.mockReset();
         localStorageData.clear();
-    });
+        mockImportKey.mockReset();
+        mockDeriveKey.mockReset();
+        mockEncrypt.mockReset();
+        mockDecrypt.mockReset();
 
-    describe('getCredentials', () => {
-        it('reads from keychain when available', async () => {
-            mockInvoke.mockResolvedValue(JSON.stringify({ token: 't1', secret: 's1' }));
-            const creds = await TokenStorage.getCredentials();
-            expect(creds).toEqual({ token: 't1', secret: 's1' });
-            expect(mockInvoke).toHaveBeenCalledWith('keychain_get', { key: 'auth_credentials' });
-        });
-
-        it('migrates from localStorage when keychain is empty', async () => {
-            // keychain_get returns null (empty)
-            mockInvoke.mockImplementation((cmd: string) => {
-                if (cmd === 'keychain_get') return Promise.resolve(null);
-                if (cmd === 'keychain_set') return Promise.resolve(undefined);
-                return Promise.resolve(null);
-            });
-            localStorageData.set('auth_credentials', JSON.stringify({ token: 't2', secret: 's2' }));
-
-            const creds = await TokenStorage.getCredentials();
-            expect(creds).toEqual({ token: 't2', secret: 's2' });
-            // Verify migration: keychain_set was called
-            expect(mockInvoke).toHaveBeenCalledWith('keychain_set', {
-                key: 'auth_credentials',
-                value: JSON.stringify({ token: 't2', secret: 's2' }),
-            });
-            // Migration flag set
-            expect(localStorageData.get('_keychain_migrated')).toBe('true');
-            // Old localStorage entry removed
-            expect(localStorageData.has('auth_credentials')).toBe(false);
-        });
-
-        it('skips migration when flag already set', async () => {
-            mockInvoke.mockResolvedValue(null);
-            localStorageData.set('_keychain_migrated', 'true');
-            localStorageData.set('auth_credentials', JSON.stringify({ token: 'old', secret: 'old' }));
-
-            const creds = await TokenStorage.getCredentials();
-            expect(creds).toBeNull();
-            // keychain_set should NOT be called (migration skipped)
-            expect(mockInvoke).not.toHaveBeenCalledWith('keychain_set', expect.anything());
-        });
-
-        it('aborts migration if keychain_set fails', async () => {
-            mockInvoke.mockImplementation((cmd: string) => {
-                if (cmd === 'keychain_get') return Promise.resolve(null);
-                if (cmd === 'keychain_set') return Promise.reject(new Error('no secret service'));
-                return Promise.resolve(null);
-            });
-            localStorageData.set('auth_credentials', JSON.stringify({ token: 't3', secret: 's3' }));
-
-            const creds = await TokenStorage.getCredentials();
-            // Falls back to localStorage data (migration failed, keychain_get returned null, fallback path)
-            expect(creds).toBeNull(); // migrateToKeychain returns null on failure, but fallback reads localStorage
-            // localStorage should NOT be deleted
-            expect(localStorageData.has('auth_credentials')).toBe(true);
-            // Migration flag should NOT be set
-            expect(localStorageData.has('_keychain_migrated')).toBe(false);
-        });
+        const fakeKey = { type: 'secret' };
+        mockImportKey.mockResolvedValue(fakeKey);
+        mockDeriveKey.mockResolvedValue(fakeKey);
     });
 
     describe('setCredentials', () => {
-        it('writes to keychain', async () => {
-            mockInvoke.mockResolvedValue(undefined);
-            const result = await TokenStorage.setCredentials({ token: 'nt', secret: 'ns' });
+        it('encrypts and stores in localStorage', async () => {
+            const cipherBytes = new TextEncoder().encode('encrypted-data');
+            mockEncrypt.mockResolvedValue(cipherBytes.buffer);
+
+            const result = await TokenStorage.setCredentials(testCreds);
             expect(result).toBe(true);
-            expect(mockInvoke).toHaveBeenCalledWith('keychain_set', {
-                key: 'auth_credentials',
-                value: JSON.stringify({ token: 'nt', secret: 'ns' }),
-            });
+            expect(mockEncrypt).toHaveBeenCalled();
+            expect(localStorageData.has('auth_credentials')).toBe(true);
         });
 
-        it('falls back to localStorage if keychain fails', async () => {
-            mockInvoke.mockRejectedValue(new Error('fail'));
-            const result = await TokenStorage.setCredentials({ token: 'nt', secret: 'ns' });
-            expect(result).toBe(true);
-            expect(localStorageData.get('auth_credentials')).toBe(JSON.stringify({ token: 'nt', secret: 'ns' }));
+        it('returns false if encryption fails', async () => {
+            mockEncrypt.mockRejectedValue(new Error('encrypt fail'));
+            const result = await TokenStorage.setCredentials(testCreds);
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('getCredentials', () => {
+        it('returns null when nothing stored', async () => {
+            const creds = await TokenStorage.getCredentials();
+            expect(creds).toBeNull();
+        });
+
+        it('decrypts stored credentials', async () => {
+            localStorageData.set('auth_credentials', 'some-base64-data');
+            mockDecrypt.mockResolvedValue(new TextEncoder().encode(testCredsJson).buffer);
+
+            const creds = await TokenStorage.getCredentials();
+            expect(creds).toEqual(testCreds);
+            expect(mockDecrypt).toHaveBeenCalled();
+        });
+
+        it('clears corrupted data on decrypt failure', async () => {
+            localStorageData.set('auth_credentials', 'corrupted');
+            mockDecrypt.mockRejectedValue(new Error('decrypt fail'));
+
+            const creds = await TokenStorage.getCredentials();
+            expect(creds).toBeNull();
+            expect(localStorageData.has('auth_credentials')).toBe(false);
         });
     });
 
     describe('removeCredentials', () => {
-        it('deletes from keychain and cleans up localStorage', async () => {
-            mockInvoke.mockResolvedValue(undefined);
-            localStorageData.set('auth_credentials', 'leftover');
+        it('removes from localStorage', async () => {
+            localStorageData.set('auth_credentials', 'data');
             localStorageData.set('_keychain_migrated', 'true');
 
             const result = await TokenStorage.removeCredentials();
             expect(result).toBe(true);
-            expect(mockInvoke).toHaveBeenCalledWith('keychain_delete', { key: 'auth_credentials' });
             expect(localStorageData.has('auth_credentials')).toBe(false);
             expect(localStorageData.has('_keychain_migrated')).toBe(false);
         });

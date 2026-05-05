@@ -3,24 +3,44 @@ import { Platform } from 'react-native';
 import { isTauri } from '@/utils/platform';
 
 const AUTH_KEY = 'auth_credentials';
-const MIGRATION_FLAG = '_keychain_migrated';
+const LEGACY_KEYCHAIN_MIGRATION_FLAG = '_keychain_migrated';
 
 // Cache for synchronous access
 let credentialsCache: string | null = null;
 
-// Use OS keychain only in production Tauri builds (dev builds use localStorage to avoid Keychain password prompts)
-function shouldUseKeychain(): boolean {
-    return isTauri() && !__DEV__;
+// AES-GCM encryption for Tauri localStorage storage
+const ENCRYPT_KEY = 'bfelab';
+
+async function getCryptoKey(): Promise<CryptoKey> {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(ENCRYPT_KEY), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: enc.encode('happy-salt'), iterations: 100000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+    );
 }
 
-// Lazy-load Tauri invoke to avoid import errors on non-Tauri platforms
-let tauriInvoke: ((cmd: string, args?: any) => Promise<any>) | null = null;
-async function getInvoke() {
-    if (!tauriInvoke) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        tauriInvoke = invoke;
-    }
-    return tauriInvoke;
+async function encryptValue(plaintext: string): Promise<string> {
+    const key = await getCryptoKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plaintext));
+    const combined = new Uint8Array(iv.length + new Uint8Array(ciphertext).length);
+    combined.set(iv);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+    return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptValue(encrypted: string): Promise<string> {
+    const key = await getCryptoKey();
+    const raw = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
+    const iv = raw.slice(0, 12);
+    const ciphertext = raw.slice(12);
+    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    return new TextDecoder().decode(plaintext);
 }
 
 export interface AuthCredentials {
@@ -28,50 +48,19 @@ export interface AuthCredentials {
     secret: string;
 }
 
-// Migrate credentials from localStorage to OS keychain (one-time, on first Tauri launch)
-async function migrateToKeychain(invoke: (cmd: string, args?: any) => Promise<any>): Promise<AuthCredentials | null> {
-    // Already migrated?
-    if (localStorage.getItem(MIGRATION_FLAG) === 'true') {
-        return null;
-    }
-
-    const stored = localStorage.getItem(AUTH_KEY);
-    if (!stored) return null;
-
-    try {
-        // Write to keychain first
-        await invoke('keychain_set', { key: AUTH_KEY, value: stored });
-        // Set migration flag
-        localStorage.setItem(MIGRATION_FLAG, 'true');
-        // Delete old localStorage entry
-        localStorage.removeItem(AUTH_KEY);
-        return JSON.parse(stored) as AuthCredentials;
-    } catch (e) {
-        // Keychain write failed — don't touch localStorage
-        console.warn('[keychain] Migration failed, keeping localStorage:', e);
-        return null;
-    }
-}
-
 export const TokenStorage = {
     async getCredentials(): Promise<AuthCredentials | null> {
-        // Tauri production: use OS keychain with localStorage migration
-        if (shouldUseKeychain()) {
+        // Tauri: AES-encrypted localStorage
+        if (isTauri()) {
             try {
-                const invoke = await getInvoke();
-                const stored = await invoke('keychain_get', { key: AUTH_KEY }) as string | null;
-                if (stored) {
-                    return JSON.parse(stored) as AuthCredentials;
-                }
-                // Try migration from localStorage
-                const migrated = await migrateToKeychain(invoke);
-                if (migrated) return migrated;
-                return null;
-            } catch (e) {
-                console.warn('[keychain] Read failed, falling back to localStorage:', e);
-                // Fallback to localStorage
                 const stored = localStorage.getItem(AUTH_KEY);
-                return stored ? JSON.parse(stored) as AuthCredentials : null;
+                if (!stored) return null;
+                const decrypted = await decryptValue(stored);
+                return JSON.parse(decrypted) as AuthCredentials;
+            } catch (e) {
+                console.warn('[tokenStorage] Decrypt failed, clearing corrupted data:', e);
+                localStorage.removeItem(AUTH_KEY);
+                return null;
             }
         }
 
@@ -93,15 +82,14 @@ export const TokenStorage = {
     },
 
     async setCredentials(credentials: AuthCredentials): Promise<boolean> {
-        if (shouldUseKeychain()) {
+        if (isTauri()) {
             try {
-                const invoke = await getInvoke();
-                await invoke('keychain_set', { key: AUTH_KEY, value: JSON.stringify(credentials) });
+                const encrypted = await encryptValue(JSON.stringify(credentials));
+                localStorage.setItem(AUTH_KEY, encrypted);
                 return true;
             } catch (e) {
-                console.warn('[keychain] Write failed, falling back to localStorage:', e);
-                localStorage.setItem(AUTH_KEY, JSON.stringify(credentials));
-                return true;
+                console.warn('[tokenStorage] Encrypt failed:', e);
+                return false;
             }
         }
 
@@ -122,19 +110,10 @@ export const TokenStorage = {
     },
 
     async removeCredentials(): Promise<boolean> {
-        if (shouldUseKeychain()) {
-            try {
-                const invoke = await getInvoke();
-                await invoke('keychain_delete', { key: AUTH_KEY });
-                // Also clean up any leftover localStorage
-                localStorage.removeItem(AUTH_KEY);
-                localStorage.removeItem(MIGRATION_FLAG);
-                return true;
-            } catch (e) {
-                console.warn('[keychain] Delete failed:', e);
-                localStorage.removeItem(AUTH_KEY);
-                return true;
-            }
+        if (isTauri()) {
+            localStorage.removeItem(AUTH_KEY);
+            localStorage.removeItem(LEGACY_KEYCHAIN_MIGRATION_FLAG);
+            return true;
         }
 
         if (Platform.OS === 'web') {
@@ -152,6 +131,3 @@ export const TokenStorage = {
         }
     },
 };
-
-// Exported for testing
-export { MIGRATION_FLAG };
