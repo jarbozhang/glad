@@ -1,0 +1,114 @@
+name: Build Desktop Apps
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/tauri-desktop-build.yml"
+      - "packages/happy-app/**"
+      - "packages/happy-wire/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+  push:
+    tags:
+      - "desktop-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos-latest
+            args: --target aarch64-apple-darwin
+            rust-target: aarch64-apple-darwin
+            artifact-name: happy-macos-aarch64
+            artifact-path: |
+              packages/happy-app/src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.app
+              packages/happy-app/src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
+          - name: macOS Intel
+            os: macos-latest
+            args: --target x86_64-apple-darwin
+            rust-target: x86_64-apple-darwin
+            artifact-name: happy-macos-x64
+            artifact-path: |
+              packages/happy-app/src-tauri/target/x86_64-apple-darwin/release/bundle/**/*.app
+              packages/happy-app/src-tauri/target/x86_64-apple-darwin/release/bundle/**/*.dmg
+          - name: Windows
+            os: windows-latest
+            args: ""
+            rust-target: ""
+            artifact-name: happy-windows
+            artifact-path: |
+              packages/happy-app/src-tauri/target/release/bundle/**/*.msi
+              packages/happy-app/src-tauri/target/release/bundle/**/*.exe
+          - name: Linux
+            os: ubuntu-22.04
+            args: ""
+            rust-target: ""
+            artifact-name: happy-linux
+            artifact-path: |
+              packages/happy-app/src-tauri/target/release/bundle/**/*.AppImage
+              packages/happy-app/src-tauri/target/release/bundle/**/*.deb
+              packages/happy-app/src-tauri/target/release/bundle/**/*.rpm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: packages/happy-app/src-tauri -> target
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: packages/happy-app
+          args: ${{ matrix.args }}
+
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
+          if-no-files-found: error
