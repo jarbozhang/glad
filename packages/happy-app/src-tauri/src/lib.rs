@@ -23,8 +23,10 @@ pub fn run() {
     .setup(move |app| {
       // Setup system tray
       tray::setup_tray(app.handle())?;
-      if let Some(webview) = app.get_webview_window("main") {
-        webview.navigate(local_url.clone())?;
+      if !cfg!(debug_assertions) {
+        if let Some(webview) = app.get_webview_window("main") {
+          webview.navigate(local_url.clone())?;
+        }
       }
 
       if cfg!(debug_assertions) {
@@ -38,18 +40,17 @@ pub fn run() {
     })
     .on_window_event(|window, event| {
       if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-        api.prevent_close();
-        let window = window.clone();
-        std::thread::spawn(move || {
-          let confirmed = rfd::MessageDialog::new()
-            .set_title("Quit Happy")
-            .set_description("Are you sure you want to quit?")
-            .set_buttons(rfd::MessageButtons::YesNo)
-            .show();
-          if confirmed == rfd::MessageDialogResult::Yes {
-            let _ = window.destroy();
-          }
-        });
+        #[cfg(target_os = "macos")]
+        {
+          api.prevent_close();
+          let _ = window.hide();
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+          let _ = window;
+          let _ = api;
+        }
       }
     })
     .run(tauri::generate_context!())

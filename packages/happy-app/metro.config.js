@@ -1,3 +1,4 @@
+const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname, {
@@ -19,5 +20,21 @@ config.transformer.getTransformOptions = async () => ({
     inlineRequires: true, // Critical for @shopify/react-native-skia
   },
 });
+
+const defaultResolveRequest = config.resolver.resolveRequest;
+const webAliases = {
+  "libsodium": path.resolve(__dirname, "node_modules/libsodium/dist/modules/libsodium.js"),
+  "libsodium-wrappers": path.resolve(__dirname, "node_modules/libsodium-wrappers/dist/modules/libsodium-wrappers.js"),
+};
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === "web" && webAliases[moduleName]) {
+    return context.resolveRequest(context, webAliases[moduleName], platform);
+  }
+
+  return defaultResolveRequest
+    ? defaultResolveRequest(context, moduleName, platform)
+    : context.resolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;

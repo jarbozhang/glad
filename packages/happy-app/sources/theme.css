@@ -2,6 +2,11 @@
    Prevents scroll-chaining from inner scrollable elements to the body. */
 html, body {
     overscroll-behavior: none;
+    font-family: "IBMPlexSans-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#root {
+    font-family: "IBMPlexSans-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* Theme-aware scrollbar styles using Unistyles CSS variables */
