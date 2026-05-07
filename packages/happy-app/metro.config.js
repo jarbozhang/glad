@@ -1,4 +1,3 @@
-const path = require("path");
 const fs = require("fs");
 const { getDefaultConfig } = require("expo/metro-config");
 
@@ -24,8 +23,8 @@ config.transformer.getTransformOptions = async () => ({
 
 const defaultResolveRequest = config.resolver.resolveRequest;
 const webAliases = {
-  "libsodium": path.resolve(__dirname, "node_modules/libsodium/dist/modules/libsodium.js"),
-  "libsodium-wrappers": path.resolve(__dirname, "node_modules/libsodium-wrappers/dist/modules/libsodium-wrappers.js"),
+  "libsodium": require.resolve("libsodium", { paths: [__dirname] }),
+  "libsodium-wrappers": require.resolve("libsodium-wrappers", { paths: [__dirname] }),
 };
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
