@@ -29,7 +29,10 @@ const webAliases = {
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === "web" && webAliases[moduleName]) {
-    return context.resolveRequest(context, webAliases[moduleName], platform);
+    return {
+      type: "sourceFile",
+      filePath: webAliases[moduleName],
+    };
   }
 
   return defaultResolveRequest
