@@ -95,7 +95,7 @@ export const ContextPanel = React.memo(() => {
                             accessibilityLabel={t('contextPanel.uploadToCurrentDirectory')}
                             hitSlop={6}
                         >
-                            <Ionicons name="cloud-upload-outline" size={17} color={styles.uploadButtonIcon.color} />
+                            <Ionicons name="arrow-up" size={15} color={styles.uploadButtonIcon.color} />
                             <Text style={styles.uploadButtonText}>
                                 {t('contextPanel.upload')}
                             </Text>
@@ -107,7 +107,7 @@ export const ContextPanel = React.memo(() => {
             {/* Transfer status indicator */}
             {(uploading || downloading) && (
                 <View style={styles.transferBar}>
-                    <ActivityIndicator size="small" />
+                    <ActivityIndicator size="small" color={styles.transferText.color} />
                     <Text style={styles.transferText}>
                         {uploading ? t('contextPanel.uploading') : t('contextPanel.downloading')}
                     </Text>
@@ -172,15 +172,15 @@ const styles = StyleSheet.create((theme) => ({
         borderRadius: 6,
         borderWidth: 1,
         borderColor: theme.colors.divider,
-        backgroundColor: theme.colors.surfaceHigh,
+        backgroundColor: theme.colors.surface,
     },
     uploadButtonIcon: {
-        color: theme.colors.textLink,
+        color: theme.colors.textSecondary,
     },
     uploadButtonText: {
         fontSize: 12,
         fontWeight: '600',
-        color: theme.colors.textLink,
+        color: theme.colors.text,
     },
     transferBar: {
         flexDirection: 'row',

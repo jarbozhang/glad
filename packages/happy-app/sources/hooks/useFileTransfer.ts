@@ -69,6 +69,19 @@ function buildRemotePath(targetDir: string, fileName: string): string {
         : `${targetDir}/${fileName}`;
 }
 
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+        return error.message;
+    }
+    return 'Unknown error';
+}
+
+function isCancelError(error: unknown): boolean {
+    return /cancell?ed/i.test(getErrorMessage(error));
+}
+
 export function useFileTransfer(sessionId: string | null): UseFileTransferResult {
     const [uploading, setUploading] = React.useState(false);
     const [downloading, setDownloading] = React.useState(false);
@@ -107,11 +120,11 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
             }
 
             onSuccess?.();
-        } catch (e: any) {
-            if (e?.message?.includes('cancelled') || e?.message?.includes('canceled')) {
+        } catch (e: unknown) {
+            if (isCancelError(e)) {
                 return; // user cancelled dialog
             }
-            Modal.alert('Upload failed', e?.message || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
+            Modal.alert('Upload failed', getErrorMessage(e), [{ text: 'OK', style: 'cancel' }]);
         } finally {
             setUploading(false);
         }
@@ -130,11 +143,11 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
 
             const filePaths = Array.isArray(selected) ? selected : [selected];
             await uploadFiles(targetDir, filePaths, onSuccess);
-        } catch (e: any) {
-            if (e?.message?.includes('cancelled') || e?.message?.includes('canceled')) {
+        } catch (e: unknown) {
+            if (isCancelError(e)) {
                 return;
             }
-            Modal.alert('Upload failed', e?.message || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
+            Modal.alert('Upload failed', getErrorMessage(e), [{ text: 'OK', style: 'cancel' }]);
         }
     }, [sessionId, uploading, uploadFiles]);
 
@@ -165,11 +178,11 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
 
             // 4. Write to local filesystem
             await fs.writeFile(savePath, bytes);
-        } catch (e: any) {
-            if (e?.message?.includes('cancelled') || e?.message?.includes('canceled')) {
+        } catch (e: unknown) {
+            if (isCancelError(e)) {
                 return;
             }
-            Modal.alert('Download failed', e?.message || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
+            Modal.alert('Download failed', getErrorMessage(e), [{ text: 'OK', style: 'cancel' }]);
         } finally {
             setDownloading(false);
         }

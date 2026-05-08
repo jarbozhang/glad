@@ -266,7 +266,7 @@ const TopBar = React.memo(function TopBar(props: TopBarProps) {
     return (
         <View style={[styles.topBar, { borderBottomColor: theme.colors.divider, backgroundColor: theme.colors.surfaceHigh }]}>
             <Pressable onPress={onBack} style={styles.backButton} hitSlop={8}>
-                <Text style={[styles.backArrow, { color: theme.colors.textLink }]}>
+                <Text style={[styles.backArrow, { color: theme.colors.textSecondary }]}>
                     ←
                 </Text>
             </Pressable>
@@ -283,7 +283,7 @@ const TopBar = React.memo(function TopBar(props: TopBarProps) {
 
             {onDownload && (
                 <Pressable onPress={() => onDownload(filePath)} style={styles.downloadButton} hitSlop={8}>
-                    <Text style={[styles.downloadIcon, { color: theme.colors.textLink }]}>
+                    <Text style={[styles.downloadIcon, { color: theme.colors.textSecondary }]}>
                         ↓
                     </Text>
                 </Pressable>
@@ -323,8 +323,13 @@ const styles = StyleSheet.create((theme) => ({
         position: 'relative',
     },
     backButton: {
+        width: 28,
+        height: 28,
         paddingHorizontal: 4,
         paddingVertical: 4,
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     backArrow: {
         fontSize: 18,
@@ -343,8 +348,13 @@ const styles = StyleSheet.create((theme) => ({
         ...Typography.mono(),
     },
     downloadButton: {
+        width: 28,
+        height: 28,
         paddingHorizontal: 4,
         paddingVertical: 4,
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     downloadIcon: {
         fontSize: 18,

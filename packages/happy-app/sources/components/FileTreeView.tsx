@@ -507,7 +507,7 @@ const styles = StyleSheet.create((theme) => ({
     },
     errorText: {
         fontSize: 13,
-        color: theme.colors.warningCritical,
+        color: theme.colors.textSecondary,
         textAlign: 'center',
         marginBottom: 12,
     },
@@ -515,11 +515,14 @@ const styles = StyleSheet.create((theme) => ({
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 6,
-        backgroundColor: theme.colors.textLink,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+        backgroundColor: theme.colors.surface,
     },
     retryText: {
         fontSize: 13,
-        color: '#ffffff',
+        fontWeight: '600',
+        color: theme.colors.text,
     },
     uploadBtn: {
         width: 22,
@@ -527,7 +530,9 @@ const styles = StyleSheet.create((theme) => ({
         borderRadius: 4,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+        backgroundColor: theme.colors.surfaceHigh,
         marginLeft: 4,
     },
     uploadIcon: {
@@ -542,9 +547,9 @@ const styles = StyleSheet.create((theme) => ({
         left: 8,
         borderWidth: 1,
         borderStyle: 'dashed',
-        borderColor: theme.colors.textLink,
+        borderColor: theme.colors.textSecondary,
         borderRadius: 6,
-        backgroundColor: theme.colors.surfaceHigh,
+        backgroundColor: theme.colors.surface,
         opacity: 0.92,
         justifyContent: 'center',
         alignItems: 'center',
@@ -560,6 +565,6 @@ const styles = StyleSheet.create((theme) => ({
     dropText: {
         fontSize: 13,
         fontWeight: '600',
-        color: theme.colors.textLink,
+        color: theme.colors.text,
     },
 }));

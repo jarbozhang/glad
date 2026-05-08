@@ -195,6 +195,24 @@ describe('useFileTransfer', () => {
         expect(mockAlert).toHaveBeenCalledWith('Upload failed', 'Disk full', expect.any(Array));
     });
 
+    it('upload: string errors show the underlying message', async () => {
+        mockOpen.mockResolvedValue('/Users/test/file.txt');
+        mockStat.mockRejectedValue('path not allowed by the configured scope');
+
+        const hook = useFileTransfer('sess1');
+        hook.uploadFile('.');
+
+        await vi.waitFor(() => {
+            expect(mockAlert).toHaveBeenCalled();
+        });
+
+        expect(mockAlert).toHaveBeenCalledWith(
+            'Upload failed',
+            'path not allowed by the configured scope',
+            expect.any(Array),
+        );
+    });
+
     it('download: full success flow', async () => {
         mockSessionReadFile.mockResolvedValue({ success: true, content: 'SGVsbG8=' });
         mockSave.mockResolvedValue('/Users/test/Downloads/readme.md');
@@ -224,5 +242,24 @@ describe('useFileTransfer', () => {
 
         expect(mockSave).not.toHaveBeenCalled();
         expect(mockAlert).toHaveBeenCalledWith('Download failed', 'Not found', expect.any(Array));
+    });
+
+    it('download: string errors show the underlying message', async () => {
+        mockSessionReadFile.mockResolvedValue({ success: true, content: 'SGVsbG8=' });
+        mockSave.mockResolvedValue('/Users/test/Downloads/readme.md');
+        mockWriteFile.mockRejectedValue('path not allowed by the configured scope');
+
+        const hook = useFileTransfer('sess1');
+        hook.downloadFile('project/readme.md');
+
+        await vi.waitFor(() => {
+            expect(mockAlert).toHaveBeenCalled();
+        });
+
+        expect(mockAlert).toHaveBeenCalledWith(
+            'Download failed',
+            'path not allowed by the configured scope',
+            expect.any(Array),
+        );
     });
 });
