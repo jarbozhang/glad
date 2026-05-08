@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { View, TextInput, ActivityIndicator } from 'react-native';
+import { View, TextInput, ActivityIndicator, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { usePathname } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
 import { Text } from '@/components/StyledText';
@@ -23,15 +24,43 @@ export const ContextPanel = React.memo(() => {
     const [view, setView] = React.useState<PanelView>('tree');
     const [selectedFile, setSelectedFile] = React.useState<string | null>(null);
     const [searchQuery, setSearchQuery] = React.useState('');
+    const [treeRefreshKey, setTreeRefreshKey] = React.useState(0);
 
-    const { uploading, downloading, enabled: transferEnabled, uploadFile, downloadFile } = useFileTransfer(sessionId);
+    const { uploading, downloading, enabled: transferEnabled, uploadFile, uploadFiles, downloadFile } = useFileTransfer(sessionId);
 
     // Reset all state when session changes (ContextPanel doesn't unmount on route change)
     React.useEffect(() => {
         setView('tree');
         setSelectedFile(null);
         setSearchQuery('');
+        setTreeRefreshKey(0);
     }, [sessionId]);
+
+    const handleFileSelect = React.useCallback((path: string) => {
+        setSelectedFile(path);
+        setView('preview');
+    }, []);
+
+    const handleBack = React.useCallback(() => {
+        setView('tree');
+        setSelectedFile(null);
+    }, []);
+
+    const handleUpload = React.useCallback((targetDir: string) => {
+        uploadFile(targetDir, () => {
+            setTreeRefreshKey((key) => key + 1);
+        });
+    }, [uploadFile]);
+
+    const handleUploadFiles = React.useCallback((targetDir: string, filePaths: string[]) => {
+        uploadFiles(targetDir, filePaths, () => {
+            setTreeRefreshKey((key) => key + 1);
+        });
+    }, [uploadFiles]);
+
+    const handleDownload = React.useCallback((path: string) => {
+        downloadFile(path);
+    }, [downloadFile]);
 
     // No active session — show empty state
     if (!sessionId) {
@@ -43,26 +72,6 @@ export const ContextPanel = React.memo(() => {
             </View>
         );
     }
-
-    const handleFileSelect = (path: string) => {
-        setSelectedFile(path);
-        setView('preview');
-    };
-
-    const handleBack = () => {
-        setView('tree');
-        setSelectedFile(null);
-    };
-
-    const handleUpload = (targetDir: string) => {
-        uploadFile(targetDir, () => {
-            // Tree will auto-refresh on next render via stale data detection
-        });
-    };
-
-    const handleDownload = (path: string) => {
-        downloadFile(path);
-    };
 
     return (
         <View style={styles.container}>
@@ -78,6 +87,20 @@ export const ContextPanel = React.memo(() => {
                         autoCapitalize="none"
                         autoCorrect={false}
                     />
+                    {transferEnabled && (
+                        <Pressable
+                            onPress={() => handleUpload('.')}
+                            style={styles.uploadButton}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('contextPanel.uploadToCurrentDirectory')}
+                            hitSlop={6}
+                        >
+                            <Ionicons name="cloud-upload-outline" size={17} color={styles.uploadButtonIcon.color} />
+                            <Text style={styles.uploadButtonText}>
+                                {t('contextPanel.upload')}
+                            </Text>
+                        </Pressable>
+                    )}
                 </View>
             )}
 
@@ -96,8 +119,11 @@ export const ContextPanel = React.memo(() => {
                 <FileTreeView
                     sessionId={sessionId}
                     searchQuery={searchQuery}
+                    refreshKey={treeRefreshKey}
+                    dropLabel={t('contextPanel.dropFilesToUpload')}
                     onFileSelect={handleFileSelect}
                     onUpload={transferEnabled ? handleUpload : undefined}
+                    onUploadFiles={transferEnabled ? handleUploadFiles : undefined}
                 />
             )}
             {view === 'preview' && selectedFile && (
@@ -118,12 +144,16 @@ const styles = StyleSheet.create((theme) => ({
         backgroundColor: theme.colors.surface,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
         paddingHorizontal: 8,
         paddingVertical: 6,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.divider,
     },
     searchInput: {
+        flex: 1,
         height: 32,
         borderRadius: 6,
         paddingHorizontal: 8,
@@ -132,6 +162,25 @@ const styles = StyleSheet.create((theme) => ({
         color: theme.colors.text,
         borderWidth: 1,
         borderColor: theme.colors.divider,
+    },
+    uploadButton: {
+        height: 32,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 9,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+        backgroundColor: theme.colors.surfaceHigh,
+    },
+    uploadButtonIcon: {
+        color: theme.colors.textLink,
+    },
+    uploadButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.textLink,
     },
     transferBar: {
         flexDirection: 'row',

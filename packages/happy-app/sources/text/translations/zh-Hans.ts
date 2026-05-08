@@ -901,6 +901,9 @@ export const zhHans: TranslationStructure = {
     contextPanel: {
         noSession: '打开一个会话以浏览文件',
         searchPlaceholder: '搜索文件...',
+        upload: '上传',
+        uploadToCurrentDirectory: '上传到当前目录',
+        dropFilesToUpload: '拖放文件以上传',
         uploading: '上传中...',
         downloading: '下载中...',
     },

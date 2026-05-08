@@ -902,6 +902,9 @@ export const ja: TranslationStructure = {
     contextPanel: {
         noSession: 'セッションを開いてファイルを閲覧',
         searchPlaceholder: 'ファイルを検索...',
+        upload: 'アップロード',
+        uploadToCurrentDirectory: '現在のディレクトリにアップロード',
+        dropFilesToUpload: 'ファイルをドロップしてアップロード',
         uploading: 'アップロード中...',
         downloading: 'ダウンロード中...',
     },

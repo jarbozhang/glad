@@ -900,6 +900,9 @@ export const zhHant: TranslationStructure = {
     contextPanel: {
         noSession: '開啟一個會話以瀏覽檔案',
         searchPlaceholder: '搜尋檔案...',
+        upload: '上傳',
+        uploadToCurrentDirectory: '上傳到目前目錄',
+        dropFilesToUpload: '拖放檔案以上傳',
         uploading: '上傳中...',
         downloading: '下載中...',
     },

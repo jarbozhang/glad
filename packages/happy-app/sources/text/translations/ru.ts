@@ -922,6 +922,9 @@ export const ru: TranslationStructure = {
     contextPanel: {
         noSession: 'Откройте сессию для просмотра файлов',
         searchPlaceholder: 'Поиск файлов...',
+        upload: 'Загрузить',
+        uploadToCurrentDirectory: 'Загрузить в текущий каталог',
+        dropFilesToUpload: 'Перетащите файлы для загрузки',
         uploading: 'Загрузка...',
         downloading: 'Скачивание...',
     },

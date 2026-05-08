@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 9 - 2026-05-08
+
+This update restores desktop file uploads in the session file panel, making it easier to move local files into the current project while browsing remotely.
+
+- Added a visible Upload button to the desktop file panel for uploading files to the current directory
+- Added drag-and-drop uploads in the desktop file panel so dropped files are sent to the current directory
+- Improved file upload handling with multi-file selection and automatic file tree refresh after uploads
+
 ## Version 8 - 2026-04-12
 
 This update migrates the monorepo from Yarn to pnpm, delivering dramatically faster dependency installs for developers and CI.

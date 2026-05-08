@@ -900,6 +900,9 @@ export const ca: TranslationStructure = {
     contextPanel: {
         noSession: 'Obre una sessió per explorar fitxers',
         searchPlaceholder: 'Cerca fitxers...',
+        upload: 'Puja',
+        uploadToCurrentDirectory: 'Puja al directori actual',
+        dropFilesToUpload: 'Deixa anar fitxers per pujar-los',
         uploading: 'Pujant...',
         downloading: 'Baixant...',
     },

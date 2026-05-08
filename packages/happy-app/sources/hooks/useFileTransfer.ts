@@ -54,7 +54,19 @@ interface UseFileTransferResult {
     downloading: boolean;
     enabled: boolean;
     uploadFile: (targetDir: string, onSuccess?: () => void) => void;
+    uploadFiles: (targetDir: string, filePaths: string[], onSuccess?: () => void) => void;
     downloadFile: (remotePath: string) => void;
+}
+
+function getFileName(filePath: string): string {
+    const normalized = filePath.replace(/\\/g, '/');
+    return normalized.split('/').pop() || 'file';
+}
+
+function buildRemotePath(targetDir: string, fileName: string): string {
+    return targetDir === '.' || targetDir === ''
+        ? fileName
+        : `${targetDir}/${fileName}`;
 }
 
 export function useFileTransfer(sessionId: string | null): UseFileTransferResult {
@@ -62,51 +74,38 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
     const [downloading, setDownloading] = React.useState(false);
     const enabled = isTauri();
 
-    const uploadFile = React.useCallback(async (targetDir: string, onSuccess?: () => void) => {
-        if (!sessionId || uploading) return;
+    const uploadFiles = React.useCallback(async (targetDir: string, filePaths: string[], onSuccess?: () => void) => {
+        if (!sessionId || uploading || filePaths.length === 0) return;
 
-        const dialog = await getDialog();
         const fs = await getFs();
-        if (!dialog || !fs) return;
+        if (!fs) return;
 
         try {
             setUploading(true);
 
-            // 1. Pick file
-            const selected = await dialog.open({ multiple: false }) as string | null;
-            if (!selected) return; // user cancelled
+            for (const filePath of filePaths) {
+                // Check file size before reading (avoid OOM on large files)
+                const stat = await fs.stat(filePath);
+                if (stat.size && stat.size > MAX_FILE_SIZE) {
+                    Modal.alert(
+                        'File too large',
+                        `File size (${formatSize(stat.size)}) exceeds the 10MB limit. Please use CLI for large files.`,
+                        [{ text: 'OK', style: 'cancel' }],
+                    );
+                    return;
+                }
 
-            const filePath = selected;
+                const bytes = await fs.readFile(filePath);
+                const base64Content = uint8ArrayToBase64(bytes);
+                const remotePath = buildRemotePath(targetDir, getFileName(filePath));
 
-            // 2. Check file size before reading (avoid OOM on large files)
-            const stat = await fs.stat(filePath);
-            if (stat.size && stat.size > MAX_FILE_SIZE) {
-                Modal.alert(
-                    'File too large',
-                    `File size (${formatSize(stat.size)}) exceeds the 10MB limit. Please use CLI for large files.`,
-                    [{ text: 'OK', style: 'cancel' }],
-                );
-                return;
+                const result = await sessionWriteFile(sessionId, remotePath, base64Content);
+                if (!result.success) {
+                    Modal.alert('Upload failed', result.error || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
+                    return;
+                }
             }
 
-            // 3. Read file content
-            const bytes = await fs.readFile(filePath);
-
-            // 4. Convert to base64
-            const base64Content = uint8ArrayToBase64(bytes);
-
-            // 5. Build remote path
-            const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'file';
-            const remotePath = targetDir === '.' ? fileName : `${targetDir}/${fileName}`;
-
-            // 6. Upload via RPC
-            const result = await sessionWriteFile(sessionId, remotePath, base64Content);
-            if (!result.success) {
-                Modal.alert('Upload failed', result.error || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
-                return;
-            }
-
-            // 7. Success
             onSuccess?.();
         } catch (e: any) {
             if (e?.message?.includes('cancelled') || e?.message?.includes('canceled')) {
@@ -117,6 +116,27 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
             setUploading(false);
         }
     }, [sessionId, uploading]);
+
+    const uploadFile = React.useCallback(async (targetDir: string, onSuccess?: () => void) => {
+        if (!sessionId || uploading) return;
+
+        const dialog = await getDialog();
+        if (!dialog) return;
+
+        try {
+            // Pick files before showing upload progress; cancelling should stay quiet.
+            const selected = await dialog.open({ multiple: true }) as string | string[] | null;
+            if (!selected) return;
+
+            const filePaths = Array.isArray(selected) ? selected : [selected];
+            await uploadFiles(targetDir, filePaths, onSuccess);
+        } catch (e: any) {
+            if (e?.message?.includes('cancelled') || e?.message?.includes('canceled')) {
+                return;
+            }
+            Modal.alert('Upload failed', e?.message || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
+        }
+    }, [sessionId, uploading, uploadFiles]);
 
     const downloadFile = React.useCallback(async (remotePath: string) => {
         if (!sessionId || downloading) return;
@@ -160,6 +180,10 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
         void uploadFile(targetDir, onSuccess);
     }, [uploadFile]);
 
+    const uploadFilesSync = React.useCallback((targetDir: string, filePaths: string[], onSuccess?: () => void) => {
+        void uploadFiles(targetDir, filePaths, onSuccess);
+    }, [uploadFiles]);
+
     const downloadFileSync = React.useCallback((remotePath: string) => {
         void downloadFile(remotePath);
     }, [downloadFile]);
@@ -169,6 +193,7 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
         downloading,
         enabled,
         uploadFile: uploadFileSync,
+        uploadFiles: uploadFilesSync,
         downloadFile: downloadFileSync,
     };
 }

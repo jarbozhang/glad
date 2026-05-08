@@ -900,6 +900,9 @@ export const en = {
     contextPanel: {
         noSession: 'Open a session to browse files',
         searchPlaceholder: 'Search files...',
+        upload: 'Upload',
+        uploadToCurrentDirectory: 'Upload to current directory',
+        dropFilesToUpload: 'Drop files to upload',
         uploading: 'Uploading...',
         downloading: 'Downloading...',
     },

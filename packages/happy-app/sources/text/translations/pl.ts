@@ -924,6 +924,9 @@ export const pl: TranslationStructure = {
     contextPanel: {
         noSession: 'Otwórz sesję, aby przeglądać pliki',
         searchPlaceholder: 'Szukaj plików...',
+        upload: 'Prześlij',
+        uploadToCurrentDirectory: 'Prześlij do bieżącego katalogu',
+        dropFilesToUpload: 'Upuść pliki, aby je przesłać',
         uploading: 'Przesyłanie...',
         downloading: 'Pobieranie...',
     },

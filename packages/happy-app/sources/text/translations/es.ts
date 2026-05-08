@@ -901,6 +901,9 @@ export const es: TranslationStructure = {
     contextPanel: {
         noSession: 'Abre una sesión para explorar archivos',
         searchPlaceholder: 'Buscar archivos...',
+        upload: 'Subir',
+        uploadToCurrentDirectory: 'Subir al directorio actual',
+        dropFilesToUpload: 'Suelta archivos para subirlos',
         uploading: 'Subiendo...',
         downloading: 'Descargando...',
     },

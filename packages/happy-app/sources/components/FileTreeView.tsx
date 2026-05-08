@@ -5,6 +5,7 @@ import { sessionGetDirectoryTree, sessionListDirectory } from '@/sync/ops';
 import { FileIcon } from '@/components/FileIcon';
 import { Text } from '@/components/StyledText';
 import { Modal } from '@/modal';
+import { isTauri } from '@/utils/platform';
 
 // Exported for testing
 export const EXCLUDED_DIRS = new Set([
@@ -23,8 +24,11 @@ interface TreeNode {
 interface FileTreeViewProps {
     sessionId: string;
     searchQuery: string;
+    refreshKey?: number;
+    dropLabel?: string;
     onFileSelect: (path: string) => void;
     onUpload?: (targetDir: string) => void;
+    onUploadFiles?: (targetDir: string, filePaths: string[]) => void;
 }
 
 // Exported for testing
@@ -129,15 +133,23 @@ const TreeNodeRow = React.memo(function TreeNodeRow({
 // -- Main FileTreeView component --
 
 export const FileTreeView = React.memo(function FileTreeView({
-    sessionId, searchQuery, onFileSelect, onUpload,
+    sessionId, searchQuery, refreshKey = 0, dropLabel, onFileSelect, onUpload, onUploadFiles,
 }: FileTreeViewProps) {
     const [tree, setTree] = React.useState<TreeNode[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const [initialLoading, setInitialLoading] = React.useState(true);
+    const [dropActive, setDropActive] = React.useState(false);
     const [expandedPaths, setExpandedPaths] = React.useState<Set<string>>(new Set());
     const [loadingPaths, setLoadingPaths] = React.useState<Set<string>>(new Set());
+    const containerRef = React.useRef<any>(null);
+    const uploadFilesRef = React.useRef(onUploadFiles);
+    const dropEnabled = !!onUploadFiles;
     // Track which dirs have had their children loaded (to distinguish "not loaded" vs "empty")
     const loadedDirsRef = React.useRef<Set<string>>(new Set());
+
+    React.useEffect(() => {
+        uploadFilesRef.current = onUploadFiles;
+    }, [onUploadFiles]);
 
     // Initial load
     const loadTree = React.useCallback(async () => {
@@ -176,7 +188,69 @@ export const FileTreeView = React.memo(function FileTreeView({
 
     React.useEffect(() => {
         loadTree();
-    }, [loadTree]);
+    }, [loadTree, refreshKey]);
+
+    React.useEffect(() => {
+        if (!dropEnabled || !isTauri()) return;
+
+        let unlisten: (() => void) | null = null;
+        let cancelled = false;
+
+        const isInsidePanel = (position: { x: number; y: number }) => {
+            const node = containerRef.current;
+            if (!node) return false;
+
+            const rect = typeof node.getBoundingClientRect === 'function'
+                ? node.getBoundingClientRect()
+                : null;
+            if (!rect) return false;
+
+            const scale = typeof window !== 'undefined'
+                ? window.devicePixelRatio || 1
+                : 1;
+            const x = position.x / scale;
+            const y = position.y / scale;
+
+            return x >= rect.left &&
+                x <= rect.right &&
+                y >= rect.top &&
+                y <= rect.bottom;
+        };
+
+        void import('@tauri-apps/api/window')
+            .then(({ getCurrentWindow }) => getCurrentWindow().onDragDropEvent((event) => {
+                if (event.payload.type === 'enter' || event.payload.type === 'over') {
+                    setDropActive(isInsidePanel(event.payload.position));
+                    return;
+                }
+
+                if (event.payload.type === 'drop') {
+                    const insidePanel = isInsidePanel(event.payload.position);
+                    setDropActive(false);
+                    if (insidePanel && event.payload.paths.length > 0) {
+                        uploadFilesRef.current?.('.', event.payload.paths);
+                    }
+                    return;
+                }
+
+                setDropActive(false);
+            }))
+            .then((cleanup) => {
+                if (cancelled) {
+                    cleanup();
+                } else {
+                    unlisten = cleanup;
+                }
+            })
+            .catch((e) => {
+                console.warn('[FileTreeView] failed to register file drop handler:', e);
+            });
+
+        return () => {
+            cancelled = true;
+            unlisten?.();
+        };
+    }, [dropEnabled]);
 
     // Lazy load a directory's contents
     const lazyLoadDir = React.useCallback(async (dirPath: string) => {
@@ -295,27 +369,30 @@ export const FileTreeView = React.memo(function FileTreeView({
 
     if (initialLoading) {
         return (
-            <View style={styles.center}>
+            <View ref={containerRef} style={styles.center}>
                 <ActivityIndicator />
+                <DropOverlay visible={dropActive} label={dropLabel} />
             </View>
         );
     }
 
     if (error) {
         return (
-            <View style={styles.center}>
+            <View ref={containerRef} style={styles.center}>
                 <Text style={styles.errorText}>{error}</Text>
                 <Pressable onPress={loadTree} style={styles.retryBtn}>
                     <Text style={styles.retryText}>Retry</Text>
                 </Pressable>
+                <DropOverlay visible={dropActive} label={dropLabel} />
             </View>
         );
     }
 
     if (!tree || tree.length === 0) {
         return (
-            <View style={styles.center}>
+            <View ref={containerRef} style={styles.center}>
                 <Text style={styles.emptyText}>No files</Text>
+                <DropOverlay visible={dropActive} label={dropLabel} />
             </View>
         );
     }
@@ -324,43 +401,67 @@ export const FileTreeView = React.memo(function FileTreeView({
     if (searchResults) {
         if (searchResults.length === 0) {
             return (
-                <View style={styles.center}>
+                <View ref={containerRef} style={styles.center}>
                     <Text style={styles.emptyText}>No matching files</Text>
+                    <DropOverlay visible={dropActive} label={dropLabel} />
                 </View>
             );
         }
         return (
-            <ScrollView style={styles.scroll}>
-                {searchResults.map((node) => (
-                    <TreeNodeRow
-                        key={node.path}
-                        node={node}
-                        depth={0}
-                        expanded={false}
-                        loading={false}
-                        onToggle={() => {}}
-                        onFileSelect={onFileSelect}
-                        onUpload={onUpload}
-                    />
-                ))}
-            </ScrollView>
+            <View ref={containerRef} style={styles.dropContainer}>
+                <ScrollView style={styles.scroll}>
+                    {searchResults.map((node) => (
+                        <TreeNodeRow
+                            key={node.path}
+                            node={node}
+                            depth={0}
+                            expanded={false}
+                            loading={false}
+                            onToggle={() => {}}
+                            onFileSelect={onFileSelect}
+                            onUpload={onUpload}
+                        />
+                    ))}
+                </ScrollView>
+                <DropOverlay visible={dropActive} label={dropLabel} />
+            </View>
         );
     }
 
     // Tree mode
     return (
-        <ScrollView style={styles.scroll}>
-            {renderNodes(tree, 0)}
-        </ScrollView>
+        <View ref={containerRef} style={styles.dropContainer}>
+            <ScrollView style={styles.scroll}>
+                {renderNodes(tree, 0)}
+            </ScrollView>
+            <DropOverlay visible={dropActive} label={dropLabel} />
+        </View>
+    );
+});
+
+const DropOverlay = React.memo(function DropOverlay({ visible, label }: { visible: boolean; label?: string }) {
+    if (!visible || !label) return null;
+
+    return (
+        <View pointerEvents="none" style={styles.dropOverlay}>
+            <View style={styles.dropMessage}>
+                <Text style={styles.dropText}>{label}</Text>
+            </View>
+        </View>
     );
 });
 
 const styles = StyleSheet.create((theme) => ({
+    dropContainer: {
+        flex: 1,
+        position: 'relative',
+    },
     scroll: {
         flex: 1,
     },
     center: {
         flex: 1,
+        position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 16,
@@ -432,5 +533,33 @@ const styles = StyleSheet.create((theme) => ({
     uploadIcon: {
         fontSize: 12,
         color: theme.colors.textSecondary,
+    },
+    dropOverlay: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        bottom: 8,
+        left: 8,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: theme.colors.textLink,
+        borderRadius: 6,
+        backgroundColor: theme.colors.surfaceHigh,
+        opacity: 0.92,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dropMessage: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 6,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+    },
+    dropText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: theme.colors.textLink,
     },
 }));

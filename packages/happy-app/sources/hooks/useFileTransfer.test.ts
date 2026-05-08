@@ -97,9 +97,49 @@ describe('useFileTransfer', () => {
             expect(mockSessionWriteFile).toHaveBeenCalled();
         });
 
-        expect(mockOpen).toHaveBeenCalledWith({ multiple: false });
+        expect(mockOpen).toHaveBeenCalledWith({ multiple: true });
         expect(mockStat).toHaveBeenCalledWith('/Users/test/photo.png');
         expect(mockSessionWriteFile).toHaveBeenCalledWith('sess1', 'docs/photo.png', expect.any(String));
+        expect(onSuccess).toHaveBeenCalled();
+    });
+
+    it('upload: supports selecting multiple files', async () => {
+        mockOpen.mockResolvedValue(['/Users/test/photo.png', '/Users/test/readme.md']);
+        mockStat.mockResolvedValue({ size: 1024 });
+        mockReadFile
+            .mockResolvedValueOnce(new Uint8Array([65]))
+            .mockResolvedValueOnce(new Uint8Array([66]));
+        mockSessionWriteFile.mockResolvedValue({ success: true });
+
+        const onSuccess = vi.fn();
+        const hook = useFileTransfer('sess1');
+        hook.uploadFile('.', onSuccess);
+
+        await vi.waitFor(() => {
+            expect(mockSessionWriteFile).toHaveBeenCalledTimes(2);
+        });
+
+        expect(mockOpen).toHaveBeenCalledWith({ multiple: true });
+        expect(mockSessionWriteFile).toHaveBeenNthCalledWith(1, 'sess1', 'photo.png', expect.any(String));
+        expect(mockSessionWriteFile).toHaveBeenNthCalledWith(2, 'sess1', 'readme.md', expect.any(String));
+        expect(onSuccess).toHaveBeenCalled();
+    });
+
+    it('uploadFiles: uploads provided local paths without opening picker', async () => {
+        mockStat.mockResolvedValue({ size: 512 });
+        mockReadFile.mockResolvedValue(new Uint8Array([72, 105]));
+        mockSessionWriteFile.mockResolvedValue({ success: true });
+
+        const onSuccess = vi.fn();
+        const hook = useFileTransfer('sess1');
+        hook.uploadFiles('src', ['C:\\Users\\test\\notes.txt'], onSuccess);
+
+        await vi.waitFor(() => {
+            expect(mockSessionWriteFile).toHaveBeenCalled();
+        });
+
+        expect(mockOpen).not.toHaveBeenCalled();
+        expect(mockSessionWriteFile).toHaveBeenCalledWith('sess1', 'src/notes.txt', expect.any(String));
         expect(onSuccess).toHaveBeenCalled();
     });
 
