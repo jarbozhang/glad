@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import { sessionGetDirectoryTree, sessionListDirectory } from '@/sync/ops';
+import { sessionListDirectory, sessionRipgrep } from '@/sync/ops';
 import { FileIcon } from '@/components/FileIcon';
 import { Text } from '@/components/StyledText';
 import { Modal } from '@/modal';
@@ -11,6 +11,23 @@ import { isTauri } from '@/utils/platform';
 export const EXCLUDED_DIRS = new Set([
     'node_modules', '.git', '.next', 'dist', 'build', '.expo', '__pycache__', '.cache',
 ]);
+
+const SEARCH_DEBOUNCE_MS = 250;
+const MIN_SEARCH_QUERY_LENGTH = 2;
+const SEARCH_RESULT_LIMIT = 200;
+const SEARCH_MAX_STDOUT_BYTES = 96 * 1024;
+const SEARCH_BASE_ARGS = [
+    '--files',
+    '--hidden',
+    '--glob', '!node_modules/**',
+    '--glob', '!.git/**',
+    '--glob', '!.next/**',
+    '--glob', '!dist/**',
+    '--glob', '!build/**',
+    '--glob', '!.expo/**',
+    '--glob', '!__pycache__/**',
+    '--glob', '!.cache/**',
+];
 
 interface TreeNode {
     name: string;
@@ -69,6 +86,57 @@ export function sortNodes(nodes: TreeNode[]): TreeNode[] {
         if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
         return a.name.localeCompare(b.name);
     });
+}
+
+export function directoryEntriesToTreeNodes(dirPath: string, entries: {
+    name: string;
+    type: 'file' | 'directory' | 'other';
+    size?: number;
+    modified?: number;
+}[]): TreeNode[] {
+    return entries
+        .filter((e) => e.type !== 'other' && !EXCLUDED_DIRS.has(e.name))
+        .map((e) => ({
+            name: e.name,
+            path: dirPath === '.' ? e.name : `${dirPath}/${e.name}`,
+            type: e.type as 'file' | 'directory',
+            size: e.size,
+            modified: e.modified,
+        }));
+}
+
+export function filePathToSearchNode(path: string): TreeNode {
+    const normalized = path.replace(/^\.?\//, '');
+    return {
+        name: normalized.split('/').pop() || normalized,
+        path: normalized,
+        type: 'file',
+    };
+}
+
+export function escapeRipgrepGlob(value: string): string {
+    return value.replace(/[\\*?[\]{}]/g, (match) => `\\${match}`);
+}
+
+export function buildSearchArgs(query: string): string[] {
+    return [
+        ...SEARCH_BASE_ARGS,
+        '--iglob',
+        `*${escapeRipgrepGlob(query)}*`,
+    ];
+}
+
+export function getFriendlyFileRpcError(raw: string, fallback = 'Failed to load files'): string {
+    if (/timed out|timeout/i.test(raw)) {
+        return 'File request timed out. Try a smaller directory or search query.';
+    }
+    if (/not available|target disconnected|socket has been disconnected/i.test(raw)) {
+        return 'Session is offline. Start the CLI to browse files.';
+    }
+    if (/RPC call failed/i.test(raw)) {
+        return 'File request failed. Retry, or narrow the directory/search query.';
+    }
+    return raw || fallback;
 }
 
 // -- TreeNodeRow component --
@@ -138,6 +206,9 @@ export const FileTreeView = React.memo(function FileTreeView({
     const [tree, setTree] = React.useState<TreeNode[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const [initialLoading, setInitialLoading] = React.useState(true);
+    const [searchResults, setSearchResults] = React.useState<TreeNode[] | null>(null);
+    const [searchLoading, setSearchLoading] = React.useState(false);
+    const [searchError, setSearchError] = React.useState<string | null>(null);
     const [dropActive, setDropActive] = React.useState(false);
     const [expandedPaths, setExpandedPaths] = React.useState<Set<string>>(new Set());
     const [loadingPaths, setLoadingPaths] = React.useState<Set<string>>(new Set());
@@ -155,32 +226,22 @@ export const FileTreeView = React.memo(function FileTreeView({
     const loadTree = React.useCallback(async () => {
         setInitialLoading(true);
         setError(null);
+        loadedDirsRef.current.clear();
+        setExpandedPaths(new Set());
+        setLoadingPaths(new Set());
         try {
-            const res = await sessionGetDirectoryTree(sessionId, '.', 3);
-            if (!res.success || !res.tree) {
-                const raw = res.error || 'Failed to load directory tree';
-                const friendly = raw.includes('RPC call failed')
-                    ? 'Session is offline. Start the CLI to browse files.'
-                    : raw;
-                setError(friendly);
+            const res = await sessionListDirectory(sessionId, '.');
+            if (!res.success || !res.entries) {
+                setError(getFriendlyFileRpcError(res.error || 'Failed to load directory'));
                 return;
             }
-            const rootChildren = res.tree.children ? filterTree(res.tree.children) : [];
+            const rootChildren = directoryEntriesToTreeNodes('.', res.entries);
+            loadedDirsRef.current.add('.');
             setTree(sortNodes(rootChildren));
-            // Mark all dirs with children as loaded
-            const markLoaded = (nodes: TreeNode[]) => {
-                for (const n of nodes) {
-                    if (n.type === 'directory' && n.children) {
-                        loadedDirsRef.current.add(n.path);
-                        markLoaded(n.children);
-                    }
-                }
-            };
-            markLoaded(rootChildren);
         } catch (e) {
             const raw = e instanceof Error ? e.message : 'Unknown error';
             console.warn('[FileTreeView] loadTree error:', raw);
-            setError('Failed to load files');
+            setError(getFriendlyFileRpcError(raw));
         } finally {
             setInitialLoading(false);
         }
@@ -252,6 +313,67 @@ export const FileTreeView = React.memo(function FileTreeView({
         };
     }, [dropEnabled]);
 
+    React.useEffect(() => {
+        const query = searchQuery.trim();
+        if (!query) {
+            setSearchResults(null);
+            setSearchError(null);
+            setSearchLoading(false);
+            return;
+        }
+        if (query.length < MIN_SEARCH_QUERY_LENGTH) {
+            setSearchResults([]);
+            setSearchError(null);
+            setSearchLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setSearchLoading(true);
+        setSearchError(null);
+
+        const timer = setTimeout(() => {
+            (async () => {
+                try {
+                    const res = await sessionRipgrep(sessionId, buildSearchArgs(query), undefined, SEARCH_MAX_STDOUT_BYTES);
+                    if (cancelled) return;
+
+                    if (!res.success || res.stdout === undefined) {
+                        setSearchResults([]);
+                        setSearchError(getFriendlyFileRpcError(res.error || 'Failed to search files', 'Failed to search files'));
+                        return;
+                    }
+
+                    const lowered = query.toLowerCase();
+                    const matches = res.stdout
+                        .split('\n')
+                        .map((path) => path.trim())
+                        .filter(Boolean)
+                        .filter((path) => path.toLowerCase().includes(lowered))
+                        .slice(0, SEARCH_RESULT_LIMIT)
+                        .map(filePathToSearchNode);
+
+                    setSearchResults(matches);
+                } catch (e) {
+                    if (!cancelled) {
+                        const raw = e instanceof Error ? e.message : 'Unknown error';
+                        setSearchResults([]);
+                        setSearchError(getFriendlyFileRpcError(raw, 'Failed to search files'));
+                    }
+                } finally {
+                    if (!cancelled) {
+                        setSearchLoading(false);
+                    }
+                }
+            })();
+        }, SEARCH_DEBOUNCE_MS);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [sessionId, searchQuery]);
+
     // Lazy load a directory's contents
     const lazyLoadDir = React.useCallback(async (dirPath: string) => {
         if (loadedDirsRef.current.has(dirPath)) return;
@@ -259,24 +381,13 @@ export const FileTreeView = React.memo(function FileTreeView({
         try {
             const res = await sessionListDirectory(sessionId, dirPath);
             if (!res.success || !res.entries) {
-                const raw = res.error || 'Failed to load directory';
-                const friendly = raw.includes('RPC call failed')
-                    ? 'Session is offline'
-                    : raw;
+                const friendly = getFriendlyFileRpcError(res.error || 'Failed to load directory', 'Failed to load directory');
                 Modal.alert('Error', friendly, [{ text: 'OK', style: 'cancel' }]);
                 return;
             }
             loadedDirsRef.current.add(dirPath);
             // Convert DirectoryEntry to TreeNode and merge into tree
-            const newChildren: TreeNode[] = res.entries
-                .filter((e) => e.type !== 'other' && !EXCLUDED_DIRS.has(e.name))
-                .map((e) => ({
-                    name: e.name,
-                    path: dirPath === '.' ? e.name : `${dirPath}/${e.name}`,
-                    type: e.type as 'file' | 'directory',
-                    size: e.size,
-                    modified: e.modified,
-                }));
+            const newChildren: TreeNode[] = directoryEntriesToTreeNodes(dirPath, res.entries);
 
             setTree((prev) => {
                 if (!prev) return prev;
@@ -357,14 +468,6 @@ export const FileTreeView = React.memo(function FileTreeView({
         return result;
     }, [expandedPaths, loadingPaths, toggleDir, onFileSelect, onUpload]);
 
-    // Search filtering: flat list of matching nodes
-    const searchResults = React.useMemo(() => {
-        if (!searchQuery || !tree) return null;
-        const query = searchQuery.toLowerCase();
-        const flat = flattenTree(tree);
-        return flat.filter((n) => n.name.toLowerCase().includes(query));
-    }, [searchQuery, tree]);
-
     // -- Render --
 
     if (initialLoading) {
@@ -398,7 +501,41 @@ export const FileTreeView = React.memo(function FileTreeView({
     }
 
     // Search mode: flat list
-    if (searchResults) {
+    if (searchQuery.trim()) {
+        if (searchQuery.trim().length < MIN_SEARCH_QUERY_LENGTH) {
+            return (
+                <View ref={containerRef} style={styles.center}>
+                    <Text style={styles.emptyText}>Type at least {MIN_SEARCH_QUERY_LENGTH} characters</Text>
+                    <DropOverlay visible={dropActive} label={dropLabel} />
+                </View>
+            );
+        }
+        if (searchLoading) {
+            return (
+                <View ref={containerRef} style={styles.center}>
+                    <ActivityIndicator />
+                    <Text style={styles.loadingText}>Searching files...</Text>
+                    <DropOverlay visible={dropActive} label={dropLabel} />
+                </View>
+            );
+        }
+        if (!searchResults) {
+            return (
+                <View ref={containerRef} style={styles.center}>
+                    <ActivityIndicator />
+                    <Text style={styles.loadingText}>Searching files...</Text>
+                    <DropOverlay visible={dropActive} label={dropLabel} />
+                </View>
+            );
+        }
+        if (searchError) {
+            return (
+                <View ref={containerRef} style={styles.center}>
+                    <Text style={styles.errorText}>{searchError}</Text>
+                    <DropOverlay visible={dropActive} label={dropLabel} />
+                </View>
+            );
+        }
         if (searchResults.length === 0) {
             return (
                 <View ref={containerRef} style={styles.center}>
@@ -504,6 +641,11 @@ const styles = StyleSheet.create((theme) => ({
         fontSize: 12,
         color: theme.colors.textSecondary,
         fontStyle: 'italic',
+    },
+    loadingText: {
+        marginTop: 8,
+        fontSize: 12,
+        color: theme.colors.textSecondary,
     },
     errorText: {
         fontSize: 13,

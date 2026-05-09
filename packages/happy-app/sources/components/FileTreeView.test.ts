@@ -17,6 +17,7 @@ vi.mock('react-native-unistyles', () => ({
 vi.mock('@/sync/ops', () => ({
     sessionGetDirectoryTree: vi.fn(),
     sessionListDirectory: vi.fn(),
+    sessionRipgrep: vi.fn(),
 }));
 vi.mock('@/components/FileIcon', () => ({ FileIcon: 'FileIcon' }));
 vi.mock('@/components/StyledText', () => ({ Text: 'Text' }));
@@ -24,9 +25,14 @@ vi.mock('@/modal', () => ({ Modal: { alert: vi.fn() } }));
 
 import {
     EXCLUDED_DIRS,
+    buildSearchArgs,
+    directoryEntriesToTreeNodes,
+    escapeRipgrepGlob,
     formatFileSize,
     filterTree,
     flattenTree,
+    getFriendlyFileRpcError,
+    filePathToSearchNode,
     sortNodes,
 } from './FileTreeView';
 
@@ -117,6 +123,62 @@ describe('FileTreeView utilities', () => {
             ];
             const result = sortNodes(nodes);
             expect(result.map((n) => n.name)).toEqual(['alpha', 'zeta', 'beta.ts', 'zebra.ts']);
+        });
+    });
+
+    describe('directoryEntriesToTreeNodes', () => {
+        it('converts shallow directory entries and filters excluded dirs', () => {
+            const result = directoryEntriesToTreeNodes('.', [
+                { name: 'src', type: 'directory' },
+                { name: '.git', type: 'directory' },
+                { name: 'README.md', type: 'file', size: 120 },
+                { name: 'socket', type: 'other' },
+            ]);
+
+            expect(result).toEqual([
+                { name: 'src', path: 'src', type: 'directory', size: undefined, modified: undefined },
+                { name: 'README.md', path: 'README.md', type: 'file', size: 120, modified: undefined },
+            ]);
+        });
+
+        it('builds child paths for nested directory entries', () => {
+            const result = directoryEntriesToTreeNodes('packages/app', [
+                { name: 'index.ts', type: 'file' },
+            ]);
+            expect(result[0].path).toBe('packages/app/index.ts');
+        });
+    });
+
+    describe('search helpers', () => {
+        it('escapes ripgrep glob characters from user input', () => {
+            expect(escapeRipgrepGlob('a[b]*?{c}\\d')).toBe('a\\[b\\]\\*\\?\\{c\\}\\\\d');
+        });
+
+        it('builds bounded search args with excludes and an iglob query', () => {
+            const args = buildSearchArgs('readme');
+            expect(args).toContain('--files');
+            expect(args).toContain('--hidden');
+            expect(args).toContain('!node_modules/**');
+            expect(args.slice(-2)).toEqual(['--iglob', '*readme*']);
+        });
+
+        it('converts ripgrep file paths to selectable file nodes', () => {
+            expect(filePathToSearchNode('./src/index.ts')).toEqual({
+                name: 'index.ts',
+                path: 'src/index.ts',
+                type: 'file',
+            });
+        });
+    });
+
+    describe('getFriendlyFileRpcError', () => {
+        it('distinguishes timeout from offline', () => {
+            expect(getFriendlyFileRpcError('operation has timed out')).toContain('timed out');
+            expect(getFriendlyFileRpcError('RPC method not available')).toContain('Session is offline');
+        });
+
+        it('does not label generic RPC failure as offline', () => {
+            expect(getFriendlyFileRpcError('RPC call failed')).toContain('File request failed');
         });
     });
 });

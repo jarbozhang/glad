@@ -107,6 +107,7 @@ interface SessionGetDirectoryTreeResponse {
 interface SessionRipgrepRequest {
     args: string[];
     cwd?: string;
+    maxStdoutBytes?: number;
 }
 
 interface SessionRipgrepResponse {
@@ -114,6 +115,7 @@ interface SessionRipgrepResponse {
     exitCode?: number;
     stdout?: string;
     stderr?: string;
+    truncated?: boolean;
     error?: string;
 }
 
@@ -466,10 +468,11 @@ export async function sessionGetDirectoryTree(
 export async function sessionRipgrep(
     sessionId: string,
     args: string[],
-    cwd?: string
+    cwd?: string,
+    maxStdoutBytes?: number
 ): Promise<SessionRipgrepResponse> {
     try {
-        const request: SessionRipgrepRequest = { args, cwd };
+        const request: SessionRipgrepRequest = { args, cwd, maxStdoutBytes };
         const response = await apiSocket.sessionRPC<SessionRipgrepResponse, SessionRipgrepRequest>(
             sessionId,
             'ripgrep',

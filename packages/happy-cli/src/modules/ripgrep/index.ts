@@ -10,10 +10,12 @@ export interface RipgrepResult {
     exitCode: number
     stdout: string
     stderr: string
+    truncated?: boolean
 }
 
 export interface RipgrepOptions {
     cwd?: string
+    maxStdoutBytes?: number
 }
 
 /**
@@ -33,9 +35,38 @@ export function run(args: string[], options?: RipgrepOptions): Promise<RipgrepRe
 
         let stdout = '';
         let stderr = '';
+        let stdoutBytes = 0;
+        let truncated = false;
+        let killedForOutputLimit = false;
+        const maxStdoutBytes = options?.maxStdoutBytes;
 
         child.stdout.on('data', (data) => {
-            stdout += data.toString();
+            if (maxStdoutBytes === undefined) {
+                stdout += data.toString();
+                return;
+            }
+
+            if (stdoutBytes >= maxStdoutBytes) {
+                truncated = true;
+                if (!killedForOutputLimit) {
+                    killedForOutputLimit = true;
+                    child.kill();
+                }
+                return;
+            }
+
+            const remainingBytes = maxStdoutBytes - stdoutBytes;
+            if (data.length <= remainingBytes) {
+                stdout += data.toString();
+                stdoutBytes += data.length;
+                return;
+            }
+
+            stdout += data.subarray(0, remainingBytes).toString();
+            stdoutBytes = maxStdoutBytes;
+            truncated = true;
+            killedForOutputLimit = true;
+            child.kill();
         });
 
         child.stderr.on('data', (data) => {
@@ -43,10 +74,19 @@ export function run(args: string[], options?: RipgrepOptions): Promise<RipgrepRe
         });
 
         child.on('close', (code) => {
+            let output = stdout;
+            if (truncated) {
+                const lastNewline = output.lastIndexOf('\n');
+                if (lastNewline >= 0) {
+                    output = output.slice(0, lastNewline + 1);
+                }
+            }
+
             resolve({
-                exitCode: code || 0,
-                stdout,
-                stderr
+                exitCode: killedForOutputLimit ? 0 : code || 0,
+                stdout: output,
+                stderr,
+                truncated
             });
         });
 

@@ -53,7 +53,12 @@ const stylesheet = StyleSheet.create((theme, runtime) => ({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
+        minWidth: 0,
         marginRight: 8,
+    },
+    sectionHeaderRight: {
+        flexShrink: 0,
+        alignItems: 'flex-end',
     },
     sectionHeaderPath: {
         ...Typography.default('regular'),
@@ -62,6 +67,8 @@ const stylesheet = StyleSheet.create((theme, runtime) => ({
         lineHeight: Platform.select({ ios: 18, default: 20 }),
         letterSpacing: Platform.select({ ios: -0.08, default: 0.1 }),
         fontWeight: Platform.select({ ios: 'normal', default: '500' }),
+        flexShrink: 1,
+        minWidth: 0,
     },
     sectionHeaderMachine: {
         ...Typography.default('regular'),
@@ -298,22 +305,24 @@ export function ActiveSessionsGroup({ sessions, selectedSessionId }: ActiveSessi
                         {/* Section header on grouped background */}
                         <View style={styles.sectionHeader}>
                             <View style={styles.sectionHeaderLeft}>
-                                <Text style={styles.sectionHeaderPath}>
+                                <Text style={styles.sectionHeaderPath} numberOfLines={1}>
                                     {projectGroup.displayPath}
                                 </Text>
                             </View>
-                            {/* Show git status instead of machine name */}
-                            {(() => {
-                                // Get the first session from any machine in this project
-                                const firstSession = Array.from(projectGroup.machines.values())[0]?.sessions[0];
-                                return firstSession ? (
-                                    <ProjectGitStatus sessionId={firstSession.id} />
-                                ) : (
-                                    <Text style={styles.sectionHeaderMachine} numberOfLines={1}>
-                                        {machineName}
-                                    </Text>
-                                );
-                            })()}
+                            <View style={styles.sectionHeaderRight}>
+                                {/* Show git status instead of machine name */}
+                                {(() => {
+                                    // Get the first session from any machine in this project
+                                    const firstSession = Array.from(projectGroup.machines.values())[0]?.sessions[0];
+                                    return firstSession ? (
+                                        <ProjectGitStatus sessionId={firstSession.id} />
+                                    ) : (
+                                        <Text style={styles.sectionHeaderMachine} numberOfLines={1}>
+                                            {machineName}
+                                        </Text>
+                                    );
+                                })()}
+                            </View>
                         </View>
 
                         {/* Card with just the sessions */}
