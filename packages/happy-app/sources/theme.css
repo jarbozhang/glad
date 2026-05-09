@@ -9,6 +9,10 @@ html, body {
     font-family: "IBMPlexSans-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.desktop-resize-handle {
+    cursor: col-resize;
+}
+
 /* Theme-aware scrollbar styles using Unistyles CSS variables */
 
 /* Webkit Scrollbars (Chrome, Safari, Edge) */
