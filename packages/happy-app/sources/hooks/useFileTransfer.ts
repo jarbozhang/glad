@@ -2,19 +2,22 @@
  * useFileTransfer — handles file upload/download between local filesystem and remote session.
  * Uses Tauri dialog + fs plugins for native file picking and saving.
  * Falls back to disabled state in non-Tauri environments.
- * Uploads: local file → base64 → sessionWriteFile RPC → remote
- * Downloads: sessionReadFile RPC → base64 → local file via Tauri save dialog
+ * Small files use base64 over session RPC.
+ * Large uploads/downloads use temporary object storage URLs plus remote curl via existing bash RPC.
  */
 import * as React from 'react';
 import { isTauri } from '@/utils/platform';
-import { sessionWriteFile, sessionReadFile } from '@/sync/ops';
+import { sessionWriteFile, sessionReadFile, sessionBash } from '@/sync/ops';
+import { cleanupFileTransfer, createInboundFileTransfer, createOutboundFileTransfer, type FileTransferLease } from '@/sync/fileTransfer';
 import { Modal } from '@/modal';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const LARGE_FILE_THRESHOLD = 1024 * 1024; // 1MB
+const LARGE_TRANSFER_TIMEOUT_MS = 30 * 60 * 1000;
 
 // Lazy-loaded Tauri modules (cached at module level)
 let tauriDialog: typeof import('@tauri-apps/plugin-dialog') | null = null;
 let tauriFs: typeof import('@tauri-apps/plugin-fs') | null = null;
+let tauriHttp: typeof import('@tauri-apps/plugin-http') | null = null;
 
 async function getDialog() {
     if (!isTauri()) return null;
@@ -30,6 +33,14 @@ async function getFs() {
         tauriFs = await import('@tauri-apps/plugin-fs');
     }
     return tauriFs;
+}
+
+async function getHttp() {
+    if (!isTauri()) return null;
+    if (!tauriHttp) {
+        tauriHttp = await import('@tauri-apps/plugin-http');
+    }
+    return tauriHttp;
 }
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
@@ -82,6 +93,69 @@ function isCancelError(error: unknown): boolean {
     return /cancell?ed/i.test(getErrorMessage(error));
 }
 
+function quoteShell(value: string): string {
+    return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function curlUploadCommand(localPath: string, uploadUrl: string): string {
+    return [
+        'curl',
+        '--fail',
+        '--location',
+        '--retry', '5',
+        '--retry-delay', '2',
+        '--connect-timeout', '20',
+        '--max-time', String(Math.floor(LARGE_TRANSFER_TIMEOUT_MS / 1000)),
+        '--upload-file', quoteShell(localPath),
+        quoteShell(uploadUrl),
+    ].join(' ');
+}
+
+function curlDownloadCommand(downloadUrl: string, remotePath: string): string {
+    const quotedTarget = quoteShell(remotePath);
+    const quotedTemp = quoteShell(`${remotePath}.happy-download-${Date.now()}.tmp`);
+    return [
+        'set -e;',
+        `tmp=${quotedTemp};`,
+        'curl',
+        '--fail',
+        '--location',
+        '--retry', '5',
+        '--retry-delay', '2',
+        '--connect-timeout', '20',
+        '--max-time', String(Math.floor(LARGE_TRANSFER_TIMEOUT_MS / 1000)),
+        '--output', '"$tmp"',
+        quoteShell(downloadUrl),
+        '&& mv -- "$tmp"', quotedTarget,
+    ].join(' ');
+}
+
+async function cleanupQuietly(transfer: FileTransferLease) {
+    try {
+        await cleanupFileTransfer(transfer);
+    } catch {
+        // Transfer objects are TTL-style scratch data; failed cleanup should not mask the user action.
+    }
+}
+
+async function putObject(url: string, bytes: Uint8Array): Promise<Response> {
+    const http = await getHttp();
+    const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    return await (http?.fetch ?? fetch)(url, {
+        method: 'PUT',
+        body: new Blob([body]),
+    });
+}
+
+async function getObjectBytes(url: string): Promise<Uint8Array> {
+    const http = await getHttp();
+    const response = await (http?.fetch ?? fetch)(url);
+    if (!response.ok) {
+        throw new Error(`Download staging failed: HTTP ${response.status}`);
+    }
+    return new Uint8Array(await response.arrayBuffer());
+}
+
 export function useFileTransfer(sessionId: string | null): UseFileTransferResult {
     const [uploading, setUploading] = React.useState(false);
     const [downloading, setDownloading] = React.useState(false);
@@ -97,20 +171,46 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
             setUploading(true);
 
             for (const filePath of filePaths) {
-                // Check file size before reading (avoid OOM on large files)
                 const stat = await fs.stat(filePath);
-                if (stat.size && stat.size > MAX_FILE_SIZE) {
-                    Modal.alert(
-                        'File too large',
-                        `File size (${formatSize(stat.size)}) exceeds the 10MB limit. Please use CLI for large files.`,
-                        [{ text: 'OK', style: 'cancel' }],
-                    );
-                    return;
+                const remotePath = buildRemotePath(targetDir, getFileName(filePath));
+
+                if (stat.size && stat.size > LARGE_FILE_THRESHOLD) {
+                    let transfer: FileTransferLease | null = null;
+                    try {
+                        transfer = await createInboundFileTransfer(getFileName(filePath));
+                        const bytes = await fs.readFile(filePath);
+                        const uploadResponse = await putObject(transfer.uploadUrl, bytes);
+                        if (!uploadResponse.ok) {
+                            throw new Error(`Upload staging failed: HTTP ${uploadResponse.status}`);
+                        }
+
+                        const result = await sessionBash(sessionId, {
+                            command: curlDownloadCommand(transfer.downloadUrl, remotePath),
+                            timeout: LARGE_TRANSFER_TIMEOUT_MS,
+                        });
+                        if (!result.success) {
+                            throw new Error(result.error || result.stderr || 'Remote download failed');
+                        }
+                    } catch (transferError) {
+                        if (/Large file transfer storage is not configured/i.test(getErrorMessage(transferError))) {
+                            Modal.alert(
+                                'Upload failed',
+                                `File size (${formatSize(stat.size)}) exceeds the direct transfer limit and large file transfer storage is not configured.`,
+                                [{ text: 'OK', style: 'cancel' }],
+                            );
+                            return;
+                        }
+                        throw transferError;
+                    } finally {
+                        if (transfer) {
+                            await cleanupQuietly(transfer);
+                        }
+                    }
+                    continue;
                 }
 
                 const bytes = await fs.readFile(filePath);
                 const base64Content = uint8ArrayToBase64(bytes);
-                const remotePath = buildRemotePath(targetDir, getFileName(filePath));
 
                 const result = await sessionWriteFile(sessionId, remotePath, base64Content);
                 if (!result.success) {
@@ -161,17 +261,43 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
         try {
             setDownloading(true);
 
-            // 1. Fetch file content from remote (always bypass cache — cache stores decoded text, not raw bytes)
+            // 1. Pick save location
+            const fileName = remotePath.split('/').pop() || 'file';
+            const savePath = await dialog.save({ defaultPath: fileName });
+            if (!savePath) return; // user cancelled
+
+            let transfer: FileTransferLease | null = null;
+            try {
+                transfer = await createOutboundFileTransfer(fileName);
+                const remoteUpload = await sessionBash(sessionId, {
+                    command: curlUploadCommand(remotePath, transfer.uploadUrl),
+                    timeout: LARGE_TRANSFER_TIMEOUT_MS,
+                });
+                if (remoteUpload.success) {
+                    const bytes = await getObjectBytes(transfer.downloadUrl);
+                    await fs.writeFile(savePath, bytes);
+                    return;
+                }
+
+                if (remoteUpload.error && !/Large file transfer storage is not configured/i.test(remoteUpload.error)) {
+                    throw new Error(remoteUpload.error || remoteUpload.stderr || 'Remote upload failed');
+                }
+            } catch (transferError) {
+                if (!/Large file transfer storage is not configured/i.test(getErrorMessage(transferError))) {
+                    throw transferError;
+                }
+            } finally {
+                if (transfer) {
+                    await cleanupQuietly(transfer);
+                }
+            }
+
+            // 2. Fallback for servers without transfer storage: fetch file content through RPC.
             const result = await sessionReadFile(sessionId, remotePath);
             if (!result.success || !result.content) {
                 Modal.alert('Download failed', result.error || 'File could not be read', [{ text: 'OK', style: 'cancel' }]);
                 return;
             }
-
-            // 2. Pick save location
-            const fileName = remotePath.split('/').pop() || 'file';
-            const savePath = await dialog.save({ defaultPath: fileName });
-            if (!savePath) return; // user cancelled
 
             // 3. Decode base64 to bytes
             const bytes = base64ToUint8Array(result.content);
