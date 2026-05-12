@@ -21,7 +21,10 @@ vi.mock('react-native-unistyles', () => {
         useUnistyles: () => ({ theme: dp }),
     };
 });
-vi.mock('@/sync/ops', () => ({}));
+const mockSessionReadFile = vi.fn();
+vi.mock('@/sync/ops', () => ({
+    sessionReadFile: (...args: any[]) => mockSessionReadFile(...args),
+}));
 vi.mock('@/sync/storage', () => ({ storage: { getState: () => ({}) }, useSessionFileCache: () => null }));
 vi.mock('@/components/SimpleSyntaxHighlighter', () => ({}));
 vi.mock('@/components/FileIcon', () => ({}));
@@ -29,7 +32,7 @@ vi.mock('@/components/StyledText', () => ({ Text: 'Text' }));
 vi.mock('@/constants/Typography', () => ({ Typography: { default: () => ({}), mono: () => ({}) } }));
 vi.mock('@/modal', () => ({ Modal: { alert: vi.fn() } }));
 
-import { decodeBase64ToBytes, isBinaryContent, getFileLanguage, MAX_LINES } from './FilePreviewPanel';
+import { decodeBase64ToBytes, isBinaryContent, getFileLanguage, isTooLargeForPreview, MAX_LINES, MAX_PREVIEW_BYTES } from './FilePreviewPanel';
 
 describe('isBinaryContent', () => {
     it('should return false for pure printable text', () => {
@@ -90,5 +93,13 @@ describe('line truncation logic', () => {
         expect(truncated.split('\n')).toHaveLength(MAX_LINES);
         expect(truncated.split('\n')[0]).toBe('line 1');
         expect(truncated.split('\n')[MAX_LINES - 1]).toBe(`line ${MAX_LINES}`);
+    });
+});
+
+describe('FilePreviewPanel large file guard', () => {
+    it('flags only files larger than the preview limit', () => {
+        expect(isTooLargeForPreview(undefined)).toBe(false);
+        expect(isTooLargeForPreview(MAX_PREVIEW_BYTES)).toBe(false);
+        expect(isTooLargeForPreview(MAX_PREVIEW_BYTES + 1)).toBe(true);
     });
 });

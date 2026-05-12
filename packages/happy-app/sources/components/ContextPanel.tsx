@@ -23,6 +23,7 @@ export const ContextPanel = React.memo(() => {
 
     const [view, setView] = React.useState<PanelView>('tree');
     const [selectedFile, setSelectedFile] = React.useState<string | null>(null);
+    const [selectedFileSize, setSelectedFileSize] = React.useState<number | undefined>(undefined);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [treeRefreshKey, setTreeRefreshKey] = React.useState(0);
 
@@ -32,18 +33,21 @@ export const ContextPanel = React.memo(() => {
     React.useEffect(() => {
         setView('tree');
         setSelectedFile(null);
+        setSelectedFileSize(undefined);
         setSearchQuery('');
         setTreeRefreshKey(0);
     }, [sessionId]);
 
-    const handleFileSelect = React.useCallback((path: string) => {
+    const handleFileSelect = React.useCallback((path: string, size?: number) => {
         setSelectedFile(path);
+        setSelectedFileSize(size);
         setView('preview');
     }, []);
 
     const handleBack = React.useCallback(() => {
         setView('tree');
         setSelectedFile(null);
+        setSelectedFileSize(undefined);
     }, []);
 
     const handleUpload = React.useCallback((targetDir: string) => {
@@ -130,6 +134,7 @@ export const ContextPanel = React.memo(() => {
                 <FilePreviewPanel
                     sessionId={sessionId}
                     filePath={selectedFile}
+                    fileSize={selectedFileSize}
                     onBack={handleBack}
                     onDownload={transferEnabled ? handleDownload : undefined}
                 />

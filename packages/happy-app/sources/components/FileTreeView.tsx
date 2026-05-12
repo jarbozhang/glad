@@ -43,7 +43,7 @@ interface FileTreeViewProps {
     searchQuery: string;
     refreshKey?: number;
     dropLabel?: string;
-    onFileSelect: (path: string) => void;
+    onFileSelect: (path: string, size?: number) => void;
     onUpload?: (targetDir: string) => void;
     onUploadFiles?: (targetDir: string, filePaths: string[]) => void;
 }
@@ -147,7 +147,7 @@ interface TreeNodeRowProps {
     expanded: boolean;
     loading: boolean;
     onToggle: () => void;
-    onFileSelect: (path: string) => void;
+    onFileSelect: (path: string, size?: number) => void;
     onUpload?: (targetDir: string) => void;
 }
 
@@ -162,9 +162,9 @@ const TreeNodeRow = React.memo(function TreeNodeRow({
         if (isDir) {
             onToggle();
         } else {
-            onFileSelect(node.path);
+            onFileSelect(node.path, node.size);
         }
-    }, [isDir, onToggle, onFileSelect, node.path]);
+    }, [isDir, onToggle, onFileSelect, node.path, node.size]);
 
     const handleUpload = React.useCallback(() => {
         onUpload?.(node.path);
