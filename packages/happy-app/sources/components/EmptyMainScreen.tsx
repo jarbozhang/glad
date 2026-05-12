@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import { Typography } from '@/constants/Typography';
 import { RoundButton } from '@/components/RoundButton';
 import { useConnectTerminal } from '@/hooks/useConnectTerminal';
 import { Modal } from '@/modal';
 import { t } from '@/text';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { getConnectTerminalMode } from '@/utils/connectTerminalMode';
 
 const stylesheet = StyleSheet.create((theme) => ({
     container: {
@@ -71,6 +72,8 @@ const stylesheet = StyleSheet.create((theme) => ({
         ...Typography.default(),
         fontSize: 18,
         color: theme.colors.textSecondary,
+        flex: 1,
+        lineHeight: 24,
     },
     buttonsContainer: {
         alignItems: 'center',
@@ -89,22 +92,45 @@ export function EmptyMainScreen() {
     const { connectTerminal, connectWithUrl, isLoading } = useConnectTerminal();
     const { theme } = useUnistyles();
     const styles = stylesheet;
+    const connectTerminalMode = getConnectTerminalMode();
+    const showConnectTerminal = connectTerminalMode !== 'hidden';
+    const showScanner = connectTerminalMode === 'scanner-and-manual';
+
+    const promptForTerminalUrl = React.useCallback(async () => {
+        const url = await Modal.prompt(
+            t('modals.authenticateTerminal'),
+            t('modals.pasteUrlFromTerminal'),
+            {
+                placeholder: 'happy://terminal?...',
+                cancelText: t('common.cancel'),
+                confirmText: t('common.authenticate')
+            }
+        );
+
+        if (url?.trim()) {
+            await connectWithUrl(url.trim());
+        }
+    }, [connectWithUrl]);
 
     return (
         <View style={styles.container}>
             {/* Terminal-style code block */}
-            <Text style={styles.title}>{t('components.emptyMainScreen.readyToCode')}</Text>
+            <Text style={styles.title}>
+                {showConnectTerminal
+                    ? t('components.emptyMainScreen.connectCli')
+                    : t('components.emptyMainScreen.readyToCode')}
+            </Text>
             <View style={styles.terminalBlock}>
                 <Text style={[styles.terminalText, styles.terminalTextFirst]}>
                     $ npm i -g happy
                 </Text>
                 <Text style={styles.terminalText}>
-                    $ happy
+                    $ happy auth login
                 </Text>
             </View>
 
 
-            {Platform.OS !== 'web' && (
+            {showConnectTerminal && (
                 <>
                     <View style={styles.stepsContainer}>
                         <View style={styles.stepRow}>
@@ -120,7 +146,7 @@ export function EmptyMainScreen() {
                                 <Text style={styles.stepNumberText}>2</Text>
                             </View>
                             <Text style={styles.stepText}>
-                                {t('components.emptyMainScreen.runIt')}
+                                {t('components.emptyMainScreen.runCliAuth')}
                             </Text>
                         </View>
                         <View style={styles.stepRowLast}>
@@ -128,39 +154,30 @@ export function EmptyMainScreen() {
                                 <Text style={styles.stepNumberText}>3</Text>
                             </View>
                             <Text style={styles.stepText}>
-                                {t('components.emptyMainScreen.scanQrCode')}
+                                {showScanner
+                                    ? t('components.emptyMainScreen.scanQrCode')
+                                    : t('components.emptyMainScreen.pasteTerminalUrl')}
                             </Text>
                         </View>
                     </View>
                     <View style={styles.buttonsContainer}>
-                        <View style={styles.buttonWrapper}>
-                            <RoundButton
-                                title={t('components.emptyMainScreen.openCamera')}
-                                size="large"
-                                loading={isLoading}
-                                onPress={connectTerminal}
-                            />
-                        </View>
+                        {showScanner && (
+                            <View style={styles.buttonWrapper}>
+                                <RoundButton
+                                    title={t('components.emptyMainScreen.openCamera')}
+                                    size="large"
+                                    loading={isLoading}
+                                    onPress={connectTerminal}
+                                />
+                            </View>
+                        )}
                         <View style={styles.buttonWrapperSecondary}>
                             <RoundButton
                                 title={t('connect.enterUrlManually')}
                                 size="normal"
                                 display="inverted"
-                                onPress={async () => {
-                                    const url = await Modal.prompt(
-                                        t('modals.authenticateTerminal'),
-                                        t('modals.pasteUrlFromTerminal'),
-                                        {
-                                            placeholder: 'happy://terminal?...',
-                                            cancelText: t('common.cancel'),
-                                            confirmText: t('common.authenticate')
-                                        }
-                                    );
-
-                                    if (url?.trim()) {
-                                        connectWithUrl(url.trim());
-                                    }
-                                }}
+                                loading={!showScanner && isLoading}
+                                onPress={promptForTerminalUrl}
                             />
                         </View>
                     </View>

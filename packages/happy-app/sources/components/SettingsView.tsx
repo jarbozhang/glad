@@ -1,4 +1,4 @@
-import { View, ScrollView, Pressable, Platform, Linking } from 'react-native';
+import { View, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import * as React from 'react';
 import { Text } from '@/components/StyledText';
@@ -28,6 +28,7 @@ import { useProfile } from '@/sync/storage';
 import { getDisplayName, getAvatarUrl, getBio } from '@/sync/profile';
 import { Avatar } from '@/components/Avatar';
 import { t } from '@/text';
+import { getConnectTerminalMode } from '@/utils/connectTerminalMode';
 
 export const SettingsView = React.memo(function SettingsView() {
     const { theme } = useUnistyles();
@@ -43,6 +44,9 @@ export const SettingsView = React.memo(function SettingsView() {
     const displayName = getDisplayName(profile);
     const avatarUrl = getAvatarUrl(profile);
     const bio = getBio(profile);
+    const connectTerminalMode = getConnectTerminalMode();
+    const showConnectTerminal = connectTerminalMode !== 'hidden';
+    const showScanner = connectTerminalMode === 'scanner-and-manual';
 
     const { connectTerminal, connectWithUrl, isLoading } = useConnectTerminal();
 
@@ -166,16 +170,18 @@ export const SettingsView = React.memo(function SettingsView() {
                 </View>
             </View>
 
-            {/* Connect Terminal - Only show on native platforms */}
-            {Platform.OS !== 'web' && (
+            {/* Connect Terminal */}
+            {showConnectTerminal && (
                 <ItemGroup>
-                    <Item
-                        title={t('settings.scanQrCodeToAuthenticate')}
-                        icon={<Ionicons name="qr-code-outline" size={29} color="#007AFF" />}
-                        onPress={connectTerminal}
-                        loading={isLoading}
-                        showChevron={false}
-                    />
+                    {showScanner && (
+                        <Item
+                            title={t('settings.scanQrCodeToAuthenticate')}
+                            icon={<Ionicons name="qr-code-outline" size={29} color="#007AFF" />}
+                            onPress={connectTerminal}
+                            loading={isLoading}
+                            showChevron={false}
+                        />
+                    )}
                     <Item
                         title={t('connect.enterUrlManually')}
                         icon={<Ionicons name="link-outline" size={29} color="#007AFF" />}
@@ -189,9 +195,10 @@ export const SettingsView = React.memo(function SettingsView() {
                                 }
                             );
                             if (url?.trim()) {
-                                connectWithUrl(url.trim());
+                                await connectWithUrl(url.trim());
                             }
                         }}
+                        loading={!showScanner && isLoading}
                         showChevron={false}
                     />
                 </ItemGroup>

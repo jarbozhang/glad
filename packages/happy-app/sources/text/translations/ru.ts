@@ -341,9 +341,12 @@ export const ru: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: 'Готовы к программированию?',
+            connectCli: 'Подключите Happy CLI',
             installCli: 'Установите Happy CLI',
             runIt: 'Запустите его',
+            runCliAuth: 'Запустите happy auth login или happy',
             scanQrCode: 'Отсканируйте QR-код',
+            pasteTerminalUrl: 'Вставьте URL из терминала',
             openCamera: 'Открыть камеру',
         },
     },

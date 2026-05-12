@@ -215,6 +215,7 @@ function PickerContent({
     selectedKey,
     onSelect,
     searchPlaceholder,
+    emptyText,
 }: {
     title: string;
     fixedItems?: PickerItem[];
@@ -222,6 +223,7 @@ function PickerContent({
     selectedKey: string | null;
     onSelect: (key: string) => void;
     searchPlaceholder?: string;
+    emptyText?: string;
 }) {
     const { theme } = useUnistyles();
     const [search, setSearch] = React.useState('');
@@ -278,9 +280,9 @@ function PickerContent({
                     <View style={[pickerStyles.divider, { backgroundColor: theme.colors.divider }]} />
                 )}
                 {filtered.map(renderOption)}
-                {filtered.length === 0 && search.length > 0 && (
+                {filtered.length === 0 && !fixedItems?.length && (
                     <Text style={[pickerStyles.emptyText, { color: theme.colors.textSecondary }]}>
-                        no results
+                        {search.length > 0 ? 'no results' : (emptyText ?? 'No items')}
                     </Text>
                 )}
             </ScrollView>
@@ -506,6 +508,12 @@ function NewSessionScreen() {
     // Config collapse — auto-collapses when typing, expands when empty
     const [isConfigExpanded, setIsConfigExpanded] = React.useState(true);
 
+    React.useEffect(() => {
+        void sync.refreshMachines().catch((error) => {
+            console.warn('Failed to refresh machines for new session screen', error);
+        });
+    }, []);
+
     // Auto-select first machine when none selected (first-ever use, no draft)
     React.useEffect(() => {
         if (selectedMachineId) return;
@@ -703,6 +711,11 @@ function NewSessionScreen() {
     }, []);
 
     const togglePicker = React.useCallback((type: PickerType) => {
+        if (type === 'machine') {
+            void sync.refreshMachines().catch((error) => {
+                console.warn('Failed to refresh machines for machine picker', error);
+            });
+        }
         setActivePicker(v => v === type ? null : type);
     }, []);
 
@@ -768,7 +781,7 @@ function NewSessionScreen() {
     const pickerData = React.useMemo(() => {
         switch (activePicker) {
             case 'machine':
-                return { title: 'Machine', items: machineItems, selectedKey: selectedMachineId, searchPlaceholder: 'search machines...' };
+                return { title: 'Machine', items: machineItems, selectedKey: selectedMachineId, searchPlaceholder: 'search machines...', emptyText: 'No machines' };
             case 'worktree':
                 return { title: 'Worktree', fixedItems: WORKTREE_FIXED_ITEMS, items: worktreeItems, selectedKey: worktreeKey, searchPlaceholder: 'search worktrees...' };
             default:

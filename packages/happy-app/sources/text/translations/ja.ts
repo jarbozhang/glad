@@ -372,9 +372,12 @@ export const ja: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: 'コーディングを始めますか？',
+            connectCli: 'Happy CLIを接続',
             installCli: 'Happy CLIをインストール',
             runIt: '実行する',
+            runCliAuth: 'happy auth login または happy を実行',
             scanQrCode: 'QRコードをスキャン',
+            pasteTerminalUrl: 'ターミナルURLを貼り付け',
             openCamera: 'カメラを開く',
         },
     },

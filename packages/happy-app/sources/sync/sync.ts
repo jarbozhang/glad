@@ -805,6 +805,78 @@ class Sync {
         return this.credentials;
     }
 
+    private applyMachineFromPayload = async (machine: {
+        machineId: string;
+        seq: number;
+        metadata: string | null;
+        metadataVersion: number;
+        daemonState?: string | null;
+        daemonStateVersion?: number;
+        dataEncryptionKey?: string | null;
+        active: boolean;
+        activeAt: number;
+        createdAt: number;
+        updatedAt: number;
+    }) => {
+        const machineKeysMap = new Map<string, Uint8Array | null>();
+        if (machine.dataEncryptionKey) {
+            const decryptedKey = await this.encryption.decryptEncryptionKey(machine.dataEncryptionKey);
+            if (!decryptedKey) {
+                console.error(`Failed to decrypt data encryption key for machine ${machine.machineId}`);
+                return;
+            }
+            machineKeysMap.set(machine.machineId, decryptedKey);
+            this.machineDataKeys.set(machine.machineId, decryptedKey);
+        } else {
+            machineKeysMap.set(machine.machineId, null);
+        }
+
+        await this.encryption.initializeMachines(machineKeysMap);
+
+        const machineEncryption = this.encryption.getMachineEncryption(machine.machineId);
+        if (!machineEncryption) {
+            console.error(`Machine encryption not found for ${machine.machineId} - this should never happen`);
+            return;
+        }
+
+        const existingMachine = storage.getState().machines[machine.machineId];
+        let metadata = existingMachine?.metadata ?? null;
+        let metadataVersion = existingMachine?.metadataVersion ?? 0;
+        let daemonState = existingMachine?.daemonState ?? null;
+        let daemonStateVersion = existingMachine?.daemonStateVersion ?? 0;
+
+        if (machine.metadata) {
+            try {
+                metadata = await machineEncryption.decryptMetadata(machine.metadataVersion, machine.metadata);
+                metadataVersion = machine.metadataVersion;
+            } catch (error) {
+                console.error(`Failed to decrypt machine metadata for ${machine.machineId}:`, error);
+            }
+        }
+
+        if (machine.daemonState) {
+            try {
+                daemonState = await machineEncryption.decryptDaemonState(machine.daemonStateVersion || 0, machine.daemonState);
+                daemonStateVersion = machine.daemonStateVersion || 0;
+            } catch (error) {
+                console.error(`Failed to decrypt machine daemonState for ${machine.machineId}:`, error);
+            }
+        }
+
+        storage.getState().applyMachines([{
+            id: machine.machineId,
+            seq: machine.seq,
+            createdAt: machine.createdAt,
+            updatedAt: machine.updatedAt,
+            active: machine.active,
+            activeAt: machine.activeAt,
+            metadata,
+            metadataVersion,
+            daemonState,
+            daemonStateVersion
+        }]);
+    }
+
     // Artifact methods
     public fetchArtifactsList = async (): Promise<void> => {
         log.log('📦 fetchArtifactsList: Starting artifact sync');
@@ -1951,6 +2023,9 @@ class Sync {
                     // Don't crash on settings sync errors, just log
                 }
             }
+        } else if (updateData.body.t === 'new-machine') {
+            log.log('🖥️ New machine update received');
+            await this.applyMachineFromPayload(updateData.body);
         } else if (updateData.body.t === 'update-machine') {
             const machineUpdate = updateData.body;
             const machineId = machineUpdate.machineId;  // Changed from .id to .machineId
@@ -1974,6 +2049,7 @@ class Sync {
             const machineEncryption = this.encryption.getMachineEncryption(machineId);
             if (!machineEncryption) {
                 console.error(`Machine encryption not found for ${machineId} - cannot decrypt updates`);
+                this.machinesSync.invalidate();
                 return;
             }
 
