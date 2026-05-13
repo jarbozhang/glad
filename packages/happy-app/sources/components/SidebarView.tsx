@@ -163,6 +163,10 @@ export const SidebarView = React.memo(() => {
         router.navigate('/new');
     }, [router]);
 
+    const handleSettings = React.useCallback(() => {
+        router.push('/settings');
+    }, [router]);
+
     // Title content used in both centered and left-justified modes (DRY)
     const titleContent = (
         <>
@@ -206,6 +210,12 @@ export const SidebarView = React.memo(() => {
 
                     {/* Navigation icons */}
                     <View style={styles.rightContainer}>
+                        <Pressable
+                            onPress={handleSettings}
+                            hitSlop={15}
+                        >
+                            <Ionicons name="settings-outline" size={24} color={theme.colors.header.tint} />
+                        </Pressable>
                         <Pressable
                             onPress={handleNewSession}
                             hitSlop={15}
