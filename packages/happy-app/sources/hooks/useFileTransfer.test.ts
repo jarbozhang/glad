@@ -211,6 +211,36 @@ describe('useFileTransfer', () => {
         expect(onSuccess).toHaveBeenCalled();
     });
 
+    it('upload: medium files use transfer storage to avoid inline encrypted RPC payload limits', async () => {
+        mockOpen.mockResolvedValue('/Users/test/diagram.html');
+        mockStat.mockResolvedValue({ size: 155 * 1024 });
+        mockReadFile.mockResolvedValue(new Uint8Array([60, 33, 68, 79, 67, 84, 89, 80, 69]));
+        mockCreateInboundFileTransfer.mockResolvedValue({
+            transferId: 't-html',
+            uploadUrl: 'https://storage/upload-html',
+            downloadUrl: 'https://storage/download-html',
+            objectName: 'transfers/u/t-html/diagram.html',
+            expiresAt: Date.now() + 1000,
+        });
+        mockHttpFetch.mockResolvedValue({ ok: true });
+        mockSessionBash.mockResolvedValue({ success: true, stdout: '', stderr: '', exitCode: 0 });
+
+        const onSuccess = vi.fn();
+        const hook = useFileTransfer('sess1');
+        hook.uploadFile('.', onSuccess);
+
+        await vi.waitFor(() => {
+            expect(mockSessionBash).toHaveBeenCalled();
+        });
+
+        expect(mockSessionWriteFile).not.toHaveBeenCalled();
+        expect(mockHttpFetch).toHaveBeenCalledWith('https://storage/upload-html', expect.objectContaining({ method: 'PUT' }));
+        expect(mockSessionBash).toHaveBeenCalledWith('sess1', expect.objectContaining({
+            command: expect.stringContaining('curl'),
+        }));
+        expect(onSuccess).toHaveBeenCalled();
+    });
+
     it('upload: large file shows a clear error when transfer storage is unavailable', async () => {
         mockOpen.mockResolvedValue('/Users/test/big.zip');
         mockStat.mockResolvedValue({ size: 11 * 1024 * 1024 });
