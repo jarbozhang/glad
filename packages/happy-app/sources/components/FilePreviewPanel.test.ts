@@ -32,7 +32,8 @@ vi.mock('@/components/StyledText', () => ({ Text: 'Text' }));
 vi.mock('@/constants/Typography', () => ({ Typography: { default: () => ({}), mono: () => ({}) } }));
 vi.mock('@/modal', () => ({ Modal: { alert: vi.fn() } }));
 
-import { decodeBase64ToBytes, isBinaryContent, getFileLanguage, isTooLargeForPreview, MAX_LINES, MAX_PREVIEW_BYTES } from './FilePreviewPanel';
+import { decodeBase64ToBytes, isBinaryContent, getFileLanguage, MAX_LINES, MAX_PREVIEW_BYTES } from './FilePreviewPanel';
+import { isPathNonPreviewable, isTooLargeForPreview, shouldSkipInlineFilePreview } from '@/utils/filePreviewGuards';
 
 describe('isBinaryContent', () => {
     it('should return false for pure printable text', () => {
@@ -101,5 +102,13 @@ describe('FilePreviewPanel large file guard', () => {
         expect(isTooLargeForPreview(undefined)).toBe(false);
         expect(isTooLargeForPreview(MAX_PREVIEW_BYTES)).toBe(false);
         expect(isTooLargeForPreview(MAX_PREVIEW_BYTES + 1)).toBe(true);
+    });
+
+    it('skips inline preview for known binary document types even when size is unavailable', () => {
+        expect(isPathNonPreviewable('report.pdf')).toBe(true);
+        expect(isPathNonPreviewable('slides.pptx')).toBe(true);
+        expect(shouldSkipInlineFilePreview('report.pdf')).toBe(true);
+        expect(shouldSkipInlineFilePreview('src/index.ts', MAX_PREVIEW_BYTES + 1)).toBe(true);
+        expect(shouldSkipInlineFilePreview('src/index.ts', 1024)).toBe(false);
     });
 });

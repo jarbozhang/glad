@@ -8,6 +8,7 @@ import { FileIcon } from '@/components/FileIcon';
 import { Text } from '@/components/StyledText';
 import { Typography } from '@/constants/Typography';
 import { Modal } from '@/modal';
+import { MAX_PREVIEW_BYTES, isTooLargeForPreview, shouldSkipInlineFilePreview } from '@/utils/filePreviewGuards';
 
 interface FilePreviewPanelProps {
     sessionId: string;
@@ -18,11 +19,6 @@ interface FilePreviewPanelProps {
 }
 
 const MAX_LINES = 500;
-const MAX_PREVIEW_BYTES = 1024 * 1024;
-
-function isTooLargeForPreview(fileSize: number | undefined): boolean {
-    return fileSize !== undefined && fileSize > MAX_PREVIEW_BYTES;
-}
 
 function decodeBase64ToBytes(base64: string): Uint8Array {
     const binary = atob(base64);
@@ -75,12 +71,12 @@ function getFileLanguage(path: string): string | null {
 export const FilePreviewPanel = React.memo(function FilePreviewPanel(props: FilePreviewPanelProps) {
     const { sessionId, filePath, fileSize, onBack, onDownload } = props;
     const { theme } = useUnistyles();
-    const isTooLargeToPreview = isTooLargeForPreview(fileSize);
+    const skipInlinePreview = shouldSkipInlineFilePreview(filePath, fileSize);
     const cached = useSessionFileCache(sessionId, filePath);
 
     const [content, setContent] = React.useState<string | null>(() => cached?.content ?? null);
     const [isBinary, setIsBinary] = React.useState(() => cached?.isBinary ?? false);
-    const [isLoading, setIsLoading] = React.useState(!cached && !isTooLargeToPreview);
+    const [isLoading, setIsLoading] = React.useState(!cached && !skipInlinePreview);
     const [error, setError] = React.useState<string | null>(null);
     const [showFullPath, setShowFullPath] = React.useState(false);
 
@@ -88,7 +84,7 @@ export const FilePreviewPanel = React.memo(function FilePreviewPanel(props: File
     const language = getFileLanguage(filePath);
 
     React.useEffect(() => {
-        if (cached || isTooLargeToPreview) {
+        if (cached || skipInlinePreview) {
             setIsLoading(false);
             return;
         }
@@ -137,7 +133,7 @@ export const FilePreviewPanel = React.memo(function FilePreviewPanel(props: File
         })();
 
         return () => { cancelled = true; };
-    }, [sessionId, filePath, cached, isTooLargeToPreview]);
+    }, [sessionId, filePath, cached, skipInlinePreview]);
 
     React.useEffect(() => {
         if (error) {
@@ -195,7 +191,7 @@ export const FilePreviewPanel = React.memo(function FilePreviewPanel(props: File
         );
     }
 
-    if (isTooLargeToPreview) {
+    if (skipInlinePreview) {
         return (
             <View style={styles.container}>
                 <TopBar
