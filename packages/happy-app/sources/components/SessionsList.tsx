@@ -203,13 +203,16 @@ export function SessionsList() {
     const toggleArchived = React.useCallback(() => {
         setHideInactiveSessions(!hideInactiveSessions);
     }, [hideInactiveSessions, setHideInactiveSessions]);
-    const selectable = isTablet;
-    const dataWithSelected = selectable ? React.useMemo(() => {
+    const dataWithSelected = React.useMemo(() => {
+        if (!isTablet) {
+            return data;
+        }
+
         return data?.map(item => ({
             ...item,
             selected: pathname.startsWith(`/session/${item.type === 'session' ? item.session.id : ''}`)
         }));
-    }, [data, pathname]) : data;
+    }, [data, pathname, isTablet]);
 
     // Request review
     React.useEffect(() => {

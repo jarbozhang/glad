@@ -98,14 +98,45 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Clean stale desktop bundles
+        shell: bash
+        run: |
+          find packages/happy-app/src-tauri/target -path "*/release/bundle" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
+          APP_ENV: production
+          APP_TARGET: desktop
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: packages/happy-app
           tauriScript: pnpm exec tauri
           args: ${{ matrix.args }}
+
+      - name: Verify production branding
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if find packages/happy-app/src-tauri/target -path "*/release/bundle/*" \( -iname "*preview*" -o -iname "*dev*" \) | grep -q .; then
+            echo "Production desktop bundle must not contain preview/dev names."
+            find packages/happy-app/src-tauri/target -path "*/release/bundle/*" \( -iname "*preview*" -o -iname "*dev*" \)
+            exit 1
+          fi
+
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            while IFS= read -r plist; do
+              bundle_name=$(/usr/libexec/PlistBuddy -c "Print :CFBundleName" "$plist" 2>/dev/null || true)
+              display_name=$(/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$plist" 2>/dev/null || true)
+
+              if printf "%s\n%s\n" "$bundle_name" "$display_name" | grep -Eiq "preview|dev"; then
+                echo "Production macOS app metadata must not contain preview/dev names: $plist"
+                printf "CFBundleName=%s\nCFBundleDisplayName=%s\n" "$bundle_name" "$display_name"
+                exit 1
+              fi
+            done < <(find packages/happy-app/src-tauri/target -path "*/release/bundle/macos/*.app/Contents/Info.plist")
+          fi
 
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
