@@ -10,6 +10,7 @@ import { isTauri } from '@/utils/platform';
 import { sessionWriteFile, sessionReadFile, sessionBash } from '@/sync/ops';
 import { cleanupFileTransfer, createInboundFileTransfer, createOutboundFileTransfer, type FileTransferLease } from '@/sync/fileTransfer';
 import { Modal } from '@/modal';
+import { decodeBase64, encodeBase64 } from '@/encryption/base64';
 
 const LARGE_FILE_THRESHOLD = 1024 * 1024; // 1MB
 const LARGE_TRANSFER_TIMEOUT_MS = 30 * 60 * 1000;
@@ -41,23 +42,6 @@ async function getHttp() {
         tauriHttp = await import('@tauri-apps/plugin-http');
     }
     return tauriHttp;
-}
-
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
-
-function base64ToUint8Array(base64: string): Uint8Array {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
 }
 
 interface UseFileTransferResult {
@@ -210,7 +194,7 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
                 }
 
                 const bytes = await fs.readFile(filePath);
-                const base64Content = uint8ArrayToBase64(bytes);
+                const base64Content = encodeBase64(bytes);
 
                 const result = await sessionWriteFile(sessionId, remotePath, base64Content);
                 if (!result.success) {
@@ -300,7 +284,7 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
             }
 
             // 3. Decode base64 to bytes
-            const bytes = base64ToUint8Array(result.content);
+            const bytes = decodeBase64(result.content);
 
             // 4. Write to local filesystem
             await fs.writeFile(savePath, bytes);
