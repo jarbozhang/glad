@@ -2,17 +2,16 @@
  * useFileTransfer — handles file upload/download between local filesystem and remote session.
  * Uses Tauri dialog + fs plugins for native file picking and saving.
  * Falls back to disabled state in non-Tauri environments.
- * Small files use base64 over session RPC.
- * Large uploads/downloads use temporary object storage URLs plus remote curl via existing bash RPC.
+ * Uploads use temporary object storage URLs plus remote curl via existing bash RPC.
+ * Downloads use transfer storage when available, with base64 RPC fallback for compatibility.
  */
 import * as React from 'react';
 import { isTauri } from '@/utils/platform';
-import { sessionWriteFile, sessionReadFile, sessionBash } from '@/sync/ops';
+import { sessionReadFile, sessionBash } from '@/sync/ops';
 import { cleanupFileTransfer, createInboundFileTransfer, createOutboundFileTransfer, type FileTransferLease } from '@/sync/fileTransfer';
 import { Modal } from '@/modal';
-import { decodeBase64, encodeBase64 } from '@/encryption/base64';
+import { decodeBase64 } from '@/encryption/base64';
 
-const LARGE_FILE_THRESHOLD = 64 * 1024;
 const LARGE_TRANSFER_TIMEOUT_MS = 30 * 60 * 1000;
 
 // Lazy-loaded Tauri modules (cached at module level)
@@ -157,49 +156,36 @@ export function useFileTransfer(sessionId: string | null): UseFileTransferResult
             for (const filePath of filePaths) {
                 const stat = await fs.stat(filePath);
                 const remotePath = buildRemotePath(targetDir, getFileName(filePath));
-
-                if (stat.size && stat.size > LARGE_FILE_THRESHOLD) {
-                    let transfer: FileTransferLease | null = null;
-                    try {
-                        transfer = await createInboundFileTransfer(getFileName(filePath));
-                        const bytes = await fs.readFile(filePath);
-                        const uploadResponse = await putObject(transfer.uploadUrl, bytes);
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Upload staging failed: HTTP ${uploadResponse.status}`);
-                        }
-
-                        const result = await sessionBash(sessionId, {
-                            command: curlDownloadCommand(transfer.downloadUrl, remotePath),
-                            timeout: LARGE_TRANSFER_TIMEOUT_MS,
-                        });
-                        if (!result.success) {
-                            throw new Error(result.error || result.stderr || 'Remote download failed');
-                        }
-                    } catch (transferError) {
-                        if (/Large file transfer storage is not configured/i.test(getErrorMessage(transferError))) {
-                            Modal.alert(
-                                'Upload failed',
-                                `File size (${formatSize(stat.size)}) exceeds the direct transfer limit and large file transfer storage is not configured.`,
-                                [{ text: 'OK', style: 'cancel' }],
-                            );
-                            return;
-                        }
-                        throw transferError;
-                    } finally {
-                        if (transfer) {
-                            await cleanupQuietly(transfer);
-                        }
+                let transfer: FileTransferLease | null = null;
+                try {
+                    transfer = await createInboundFileTransfer(getFileName(filePath));
+                    const bytes = await fs.readFile(filePath);
+                    const uploadResponse = await putObject(transfer.uploadUrl, bytes);
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Upload staging failed: HTTP ${uploadResponse.status}`);
                     }
-                    continue;
-                }
 
-                const bytes = await fs.readFile(filePath);
-                const base64Content = encodeBase64(bytes);
-
-                const result = await sessionWriteFile(sessionId, remotePath, base64Content);
-                if (!result.success) {
-                    Modal.alert('Upload failed', result.error || 'Unknown error', [{ text: 'OK', style: 'cancel' }]);
-                    return;
+                    const result = await sessionBash(sessionId, {
+                        command: curlDownloadCommand(transfer.downloadUrl, remotePath),
+                        timeout: LARGE_TRANSFER_TIMEOUT_MS,
+                    });
+                    if (!result.success) {
+                        throw new Error(result.error || result.stderr || 'Remote download failed');
+                    }
+                } catch (transferError) {
+                    if (/Large file transfer storage is not configured/i.test(getErrorMessage(transferError))) {
+                        Modal.alert(
+                            'Upload failed',
+                            `File transfer storage is not configured. Unable to upload ${getFileName(filePath)} (${formatSize(stat.size ?? 0)}).`,
+                            [{ text: 'OK', style: 'cancel' }],
+                        );
+                        return;
+                    }
+                    throw transferError;
+                } finally {
+                    if (transfer) {
+                        await cleanupQuietly(transfer);
+                    }
                 }
             }
 
