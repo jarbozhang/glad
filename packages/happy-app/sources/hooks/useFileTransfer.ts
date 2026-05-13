@@ -12,7 +12,7 @@ import { cleanupFileTransfer, createInboundFileTransfer, createOutboundFileTrans
 import { Modal } from '@/modal';
 import { decodeBase64, encodeBase64 } from '@/encryption/base64';
 
-const LARGE_FILE_THRESHOLD = 1024 * 1024; // 1MB
+const LARGE_FILE_THRESHOLD = 64 * 1024;
 const LARGE_TRANSFER_TIMEOUT_MS = 30 * 60 * 1000;
 
 // Lazy-loaded Tauri modules (cached at module level)
