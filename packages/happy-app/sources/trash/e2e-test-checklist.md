@@ -57,3 +57,11 @@
 - [ ] Open `http://localhost:8081` in regular browser
 - [ ] Shows normal web layout (no three-column, no ContextPanel)
 - [ ] No Tauri-related errors in browser console
+
+### TC-11: Desktop Auth Persistence
+- [ ] Install or launch a preview/production BFELAB desktop build
+- [ ] Complete account association/authentication
+- [ ] Quit via tray menu → `Quit BFELAB`
+- [ ] Reopen BFELAB → app restores authenticated state without asking to associate again
+- [ ] Click Settings → Account → Logout
+- [ ] Quit and reopen BFELAB → app requires authentication again
