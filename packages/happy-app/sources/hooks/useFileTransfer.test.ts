@@ -104,11 +104,19 @@ describe('useFileTransfer', () => {
         (global as any).window.__TAURI_INTERNALS__ = saved;
     });
 
-    it('upload: full success flow', async () => {
+    it('upload: full success flow uses transfer storage', async () => {
         mockOpen.mockResolvedValue('/Users/test/photo.png');
         mockStat.mockResolvedValue({ size: 1024 });
         mockReadFile.mockResolvedValue(new Uint8Array([72, 101, 108, 108, 111]));
-        mockSessionWriteFile.mockResolvedValue({ success: true });
+        mockCreateInboundFileTransfer.mockResolvedValue({
+            transferId: 't-photo',
+            uploadUrl: 'https://storage/upload-photo',
+            downloadUrl: 'https://storage/download-photo',
+            objectName: 'transfers/u/t-photo/photo.png',
+            expiresAt: Date.now() + 1000,
+        });
+        mockHttpFetch.mockResolvedValue({ ok: true });
+        mockSessionBash.mockResolvedValue({ success: true, stdout: '', stderr: '', exitCode: 0 });
 
         const onSuccess = vi.fn();
         const hook = useFileTransfer('sess1');
@@ -116,12 +124,16 @@ describe('useFileTransfer', () => {
         hook.uploadFile('docs', onSuccess);
 
         await vi.waitFor(() => {
-            expect(mockSessionWriteFile).toHaveBeenCalled();
+            expect(mockSessionBash).toHaveBeenCalled();
         });
 
         expect(mockOpen).toHaveBeenCalledWith({ multiple: true });
         expect(mockStat).toHaveBeenCalledWith('/Users/test/photo.png');
-        expect(mockSessionWriteFile).toHaveBeenCalledWith('sess1', 'docs/photo.png', expect.any(String));
+        expect(mockSessionWriteFile).not.toHaveBeenCalled();
+        expect(mockHttpFetch).toHaveBeenCalledWith('https://storage/upload-photo', expect.objectContaining({ method: 'PUT' }));
+        expect(mockSessionBash).toHaveBeenCalledWith('sess1', expect.objectContaining({
+            command: expect.stringContaining('curl'),
+        }));
         expect(onSuccess).toHaveBeenCalled();
     });
 
@@ -131,37 +143,69 @@ describe('useFileTransfer', () => {
         mockReadFile
             .mockResolvedValueOnce(new Uint8Array([65]))
             .mockResolvedValueOnce(new Uint8Array([66]));
-        mockSessionWriteFile.mockResolvedValue({ success: true });
+        mockCreateInboundFileTransfer
+            .mockResolvedValueOnce({
+                transferId: 't-photo',
+                uploadUrl: 'https://storage/upload-photo',
+                downloadUrl: 'https://storage/download-photo',
+                objectName: 'transfers/u/t-photo/photo.png',
+                expiresAt: Date.now() + 1000,
+            })
+            .mockResolvedValueOnce({
+                transferId: 't-readme',
+                uploadUrl: 'https://storage/upload-readme',
+                downloadUrl: 'https://storage/download-readme',
+                objectName: 'transfers/u/t-readme/readme.md',
+                expiresAt: Date.now() + 1000,
+            });
+        mockHttpFetch.mockResolvedValue({ ok: true });
+        mockSessionBash.mockResolvedValue({ success: true, stdout: '', stderr: '', exitCode: 0 });
 
         const onSuccess = vi.fn();
         const hook = useFileTransfer('sess1');
         hook.uploadFile('.', onSuccess);
 
         await vi.waitFor(() => {
-            expect(mockSessionWriteFile).toHaveBeenCalledTimes(2);
+            expect(mockSessionBash).toHaveBeenCalledTimes(2);
         });
 
         expect(mockOpen).toHaveBeenCalledWith({ multiple: true });
-        expect(mockSessionWriteFile).toHaveBeenNthCalledWith(1, 'sess1', 'photo.png', expect.any(String));
-        expect(mockSessionWriteFile).toHaveBeenNthCalledWith(2, 'sess1', 'readme.md', expect.any(String));
+        expect(mockSessionWriteFile).not.toHaveBeenCalled();
+        expect(mockSessionBash).toHaveBeenNthCalledWith(1, 'sess1', expect.objectContaining({
+            command: expect.stringContaining('photo.png'),
+        }));
+        expect(mockSessionBash).toHaveBeenNthCalledWith(2, 'sess1', expect.objectContaining({
+            command: expect.stringContaining('readme.md'),
+        }));
         expect(onSuccess).toHaveBeenCalled();
     });
 
     it('uploadFiles: uploads provided local paths without opening picker', async () => {
         mockStat.mockResolvedValue({ size: 512 });
         mockReadFile.mockResolvedValue(new Uint8Array([72, 105]));
-        mockSessionWriteFile.mockResolvedValue({ success: true });
+        mockCreateInboundFileTransfer.mockResolvedValue({
+            transferId: 't-notes',
+            uploadUrl: 'https://storage/upload-notes',
+            downloadUrl: 'https://storage/download-notes',
+            objectName: 'transfers/u/t-notes/notes.txt',
+            expiresAt: Date.now() + 1000,
+        });
+        mockHttpFetch.mockResolvedValue({ ok: true });
+        mockSessionBash.mockResolvedValue({ success: true, stdout: '', stderr: '', exitCode: 0 });
 
         const onSuccess = vi.fn();
         const hook = useFileTransfer('sess1');
         hook.uploadFiles('src', ['C:\\Users\\test\\notes.txt'], onSuccess);
 
         await vi.waitFor(() => {
-            expect(mockSessionWriteFile).toHaveBeenCalled();
+            expect(mockSessionBash).toHaveBeenCalled();
         });
 
         expect(mockOpen).not.toHaveBeenCalled();
-        expect(mockSessionWriteFile).toHaveBeenCalledWith('sess1', 'src/notes.txt', expect.any(String));
+        expect(mockSessionWriteFile).not.toHaveBeenCalled();
+        expect(mockSessionBash).toHaveBeenCalledWith('sess1', expect.objectContaining({
+            command: expect.stringContaining('src/notes.txt'),
+        }));
         expect(onSuccess).toHaveBeenCalled();
     });
 
@@ -241,9 +285,9 @@ describe('useFileTransfer', () => {
         expect(onSuccess).toHaveBeenCalled();
     });
 
-    it('upload: large file shows a clear error when transfer storage is unavailable', async () => {
-        mockOpen.mockResolvedValue('/Users/test/big.zip');
-        mockStat.mockResolvedValue({ size: 11 * 1024 * 1024 });
+    it('upload: shows a clear error when transfer storage is unavailable', async () => {
+        mockOpen.mockResolvedValue('/Users/test/file.txt');
+        mockStat.mockResolvedValue({ size: 512 });
         mockCreateInboundFileTransfer.mockRejectedValue(new Error('Large file transfer storage is not configured'));
 
         const hook = useFileTransfer('sess1');
@@ -256,16 +300,24 @@ describe('useFileTransfer', () => {
         expect(mockSessionWriteFile).not.toHaveBeenCalled();
         expect(mockAlert).toHaveBeenCalledWith(
             'Upload failed',
-            expect.stringContaining('large file transfer storage is not configured'),
+            expect.stringContaining('File transfer storage is not configured'),
             expect.any(Array),
         );
     });
 
-    it('upload: RPC failure shows alert', async () => {
+    it('upload: remote download failure shows alert', async () => {
         mockOpen.mockResolvedValue('/Users/test/file.txt');
         mockStat.mockResolvedValue({ size: 100 });
         mockReadFile.mockResolvedValue(new Uint8Array([65]));
-        mockSessionWriteFile.mockResolvedValue({ success: false, error: 'Disk full' });
+        mockCreateInboundFileTransfer.mockResolvedValue({
+            transferId: 't-file',
+            uploadUrl: 'https://storage/upload-file',
+            downloadUrl: 'https://storage/download-file',
+            objectName: 'transfers/u/t-file/file.txt',
+            expiresAt: Date.now() + 1000,
+        });
+        mockHttpFetch.mockResolvedValue({ ok: true });
+        mockSessionBash.mockResolvedValue({ success: false, stdout: '', stderr: '', exitCode: 1, error: 'Disk full' });
 
         const onSuccess = vi.fn();
         const hook = useFileTransfer('sess1');
