@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { isTauri } from '@/utils/platform';
+import { DesktopCredentialStorage } from './desktopCredentialStorage';
 
 const AUTH_KEY = 'auth_credentials';
 const LEGACY_KEYCHAIN_MIGRATION_FLAG = '_keychain_migrated';
@@ -48,20 +49,77 @@ export interface AuthCredentials {
     secret: string;
 }
 
+async function decryptCredentials(
+    encrypted: string,
+    source: string,
+    clearCorrupted: () => void | Promise<void>
+): Promise<AuthCredentials | null> {
+    try {
+        const decrypted = await decryptValue(encrypted);
+        return JSON.parse(decrypted) as AuthCredentials;
+    } catch (e) {
+        console.warn(`[tokenStorage] Failed to read ${source}, clearing corrupted data:`, e);
+        await clearCorrupted();
+        return null;
+    }
+}
+
+function useDesktopCredentialStore(): boolean {
+    return isTauri() && !(typeof __DEV__ !== 'undefined' && __DEV__);
+}
+
+function removeLegacyTauriCredentials(): boolean {
+    try {
+        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(LEGACY_KEYCHAIN_MIGRATION_FLAG);
+        return true;
+    } catch (error) {
+        console.warn('[tokenStorage] Failed to remove legacy Tauri credentials:', error);
+        return false;
+    }
+}
+
+async function getLegacyTauriCredentials(): Promise<{ credentials: AuthCredentials; encrypted: string } | null> {
+    try {
+        const encrypted = localStorage.getItem(AUTH_KEY);
+        if (!encrypted) return null;
+
+        const credentials = await decryptCredentials(encrypted, 'legacy Tauri credentials', () => {
+            localStorage.removeItem(AUTH_KEY);
+        });
+
+        return credentials ? { credentials, encrypted } : null;
+    } catch (error) {
+        console.warn('[tokenStorage] Failed to read legacy Tauri credentials:', error);
+        return null;
+    }
+}
+
 export const TokenStorage = {
     async getCredentials(): Promise<AuthCredentials | null> {
-        // Tauri: AES-encrypted localStorage
         if (isTauri()) {
-            try {
-                const stored = localStorage.getItem(AUTH_KEY);
-                if (!stored) return null;
-                const decrypted = await decryptValue(stored);
-                return JSON.parse(decrypted) as AuthCredentials;
-            } catch (e) {
-                console.warn('[tokenStorage] Decrypt failed, clearing corrupted data:', e);
-                localStorage.removeItem(AUTH_KEY);
-                return null;
+            if (useDesktopCredentialStore()) {
+                const stored = await DesktopCredentialStorage.getEncryptedCredentials();
+                if (stored) {
+                    const credentials = await decryptCredentials(stored, 'desktop credential store', async () => {
+                        await DesktopCredentialStorage.removeEncryptedCredentials();
+                    });
+                    if (credentials) return credentials;
+                }
+
+                const legacy = await getLegacyTauriCredentials();
+                if (!legacy) return null;
+
+                const migrated = await DesktopCredentialStorage.setEncryptedCredentials(legacy.encrypted);
+                if (!migrated) {
+                    console.warn('[tokenStorage] Failed to migrate legacy Tauri credentials to desktop store');
+                }
+
+                return legacy.credentials;
             }
+
+            const legacy = await getLegacyTauriCredentials();
+            return legacy?.credentials ?? null;
         }
 
         // Web: localStorage
@@ -85,6 +143,14 @@ export const TokenStorage = {
         if (isTauri()) {
             try {
                 const encrypted = await encryptValue(JSON.stringify(credentials));
+                if (useDesktopCredentialStore()) {
+                    const saved = await DesktopCredentialStorage.setEncryptedCredentials(encrypted);
+                    if (saved) {
+                        removeLegacyTauriCredentials();
+                    }
+                    return saved;
+                }
+
                 localStorage.setItem(AUTH_KEY, encrypted);
                 return true;
             } catch (e) {
@@ -111,9 +177,11 @@ export const TokenStorage = {
 
     async removeCredentials(): Promise<boolean> {
         if (isTauri()) {
-            localStorage.removeItem(AUTH_KEY);
-            localStorage.removeItem(LEGACY_KEYCHAIN_MIGRATION_FLAG);
-            return true;
+            const storeSuccess = useDesktopCredentialStore()
+                ? await DesktopCredentialStorage.removeEncryptedCredentials()
+                : true;
+            const legacySuccess = removeLegacyTauriCredentials();
+            return storeSuccess && legacySuccess;
         }
 
         if (Platform.OS === 'web') {
