@@ -29,6 +29,7 @@ import { getDisplayName, getAvatarUrl, getBio } from '@/sync/profile';
 import { Avatar } from '@/components/Avatar';
 import { t } from '@/text';
 import { getConnectTerminalMode } from '@/utils/connectTerminalMode';
+import { desktopAboutFooter, desktopBrandAccessibilityLabel, desktopLogotypeSource, isBFELABDesktop } from '@/brand/desktopBrand';
 
 export const SettingsView = React.memo(function SettingsView() {
     const { theme } = useUnistyles();
@@ -47,24 +48,9 @@ export const SettingsView = React.memo(function SettingsView() {
     const connectTerminalMode = getConnectTerminalMode();
     const showConnectTerminal = connectTerminalMode !== 'hidden';
     const showScanner = connectTerminalMode === 'scanner-and-manual';
+    const isDesktopBrand = isBFELABDesktop();
 
     const { connectTerminal, connectWithUrl, isLoading } = useConnectTerminal();
-
-    const handleGitHub = async () => {
-        const url = 'https://github.com/slopus/happy';
-        const supported = await Linking.canOpenURL(url);
-        if (supported) {
-            await Linking.openURL(url);
-        }
-    };
-
-    const handleReportIssue = async () => {
-        const url = 'https://github.com/slopus/happy/issues';
-        const supported = await Linking.canOpenURL(url);
-        if (supported) {
-            await Linking.openURL(url);
-        }
-    };
 
     const handleSubscribe = async () => {
         trackPaywallButtonClicked('voluntary_support');
@@ -161,9 +147,10 @@ export const SettingsView = React.memo(function SettingsView() {
                         // Logo view: Original logo + version
                         <>
                             <Image
-                                source={theme.dark ? require('@/assets/images/logotype-light.png') : require('@/assets/images/logotype-dark.png')}
+                                source={desktopLogotypeSource(theme.dark)}
                                 contentFit="contain"
                                 style={{ width: 300, height: 90, marginBottom: 12 }}
+                                accessibilityLabel={desktopBrandAccessibilityLabel()}
                             />
                         </>
                     )}
@@ -351,49 +338,67 @@ export const SettingsView = React.memo(function SettingsView() {
             )}
 
             {/* About */}
-            <ItemGroup title={t('settings.about')} footer={t('settings.aboutFooter')}>
-                <Item
-                    title={t('settings.whatsNew')}
-                    subtitle={t('settings.whatsNewSubtitle')}
-                    icon={<Ionicons name="sparkles-outline" size={29} color="#FF9500" />}
-                    onPress={() => {
-                        trackWhatsNewClicked();
-                        router.push('/changelog');
-                    }}
-                />
-                <Item
-                    title={t('settings.github')}
-                    icon={<Ionicons name="logo-github" size={29} color={theme.colors.text} />}
-                    detail="slopus/happy"
-                    onPress={handleGitHub}
-                />
-                <Item
-                    title={t('settings.reportIssue')}
-                    icon={<Ionicons name="bug-outline" size={29} color="#FF3B30" />}
-                    onPress={handleReportIssue}
-                />
-                <Item
-                    title={t('settings.privacyPolicy')}
-                    icon={<Ionicons name="shield-checkmark-outline" size={29} color="#007AFF" />}
-                    onPress={async () => {
-                        const url = 'https://happy.engineering/privacy/';
-                        const supported = await Linking.canOpenURL(url);
-                        if (supported) {
-                            await Linking.openURL(url);
-                        }
-                    }}
-                />
-                <Item
-                    title={t('settings.termsOfService')}
-                    icon={<Ionicons name="document-text-outline" size={29} color="#007AFF" />}
-                    onPress={async () => {
-                        const url = 'https://github.com/slopus/happy/blob/main/TERMS.md';
-                        const supported = await Linking.canOpenURL(url);
-                        if (supported) {
-                            await Linking.openURL(url);
-                        }
-                    }}
-                />
+            <ItemGroup title={t('settings.about')} footer={desktopAboutFooter()}>
+                {!isDesktopBrand && (
+                    <Item
+                        title={t('settings.whatsNew')}
+                        subtitle={t('settings.whatsNewSubtitle')}
+                        icon={<Ionicons name="sparkles-outline" size={29} color="#FF9500" />}
+                        onPress={() => {
+                            trackWhatsNewClicked();
+                            router.push('/changelog');
+                        }}
+                    />
+                )}
+                {!isDesktopBrand && (
+                    <>
+                        <Item
+                            title={t('settings.github')}
+                            icon={<Ionicons name="logo-github" size={29} color={theme.colors.text} />}
+                            detail="slopus/happy"
+                            onPress={async () => {
+                                const url = 'https://github.com/slopus/happy';
+                                const supported = await Linking.canOpenURL(url);
+                                if (supported) {
+                                    await Linking.openURL(url);
+                                }
+                            }}
+                        />
+                        <Item
+                            title={t('settings.reportIssue')}
+                            icon={<Ionicons name="bug-outline" size={29} color="#FF3B30" />}
+                            onPress={async () => {
+                                const url = 'https://github.com/slopus/happy/issues';
+                                const supported = await Linking.canOpenURL(url);
+                                if (supported) {
+                                    await Linking.openURL(url);
+                                }
+                            }}
+                        />
+                        <Item
+                            title={t('settings.privacyPolicy')}
+                            icon={<Ionicons name="shield-checkmark-outline" size={29} color="#007AFF" />}
+                            onPress={async () => {
+                                const url = 'https://happy.engineering/privacy/';
+                                const supported = await Linking.canOpenURL(url);
+                                if (supported) {
+                                    await Linking.openURL(url);
+                                }
+                            }}
+                        />
+                        <Item
+                            title={t('settings.termsOfService')}
+                            icon={<Ionicons name="document-text-outline" size={29} color="#007AFF" />}
+                            onPress={async () => {
+                                const url = 'https://github.com/slopus/happy/blob/main/TERMS.md';
+                                const supported = await Linking.canOpenURL(url);
+                                if (supported) {
+                                    await Linking.openURL(url);
+                                }
+                            }}
+                        />
+                    </>
+                )}
                 {Platform.OS === 'ios' && (
                     <Item
                         title={t('settings.eula')}

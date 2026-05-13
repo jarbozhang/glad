@@ -1,6 +1,7 @@
 import { Platform, Linking } from 'react-native';
 import { Modal } from '@/modal';
 import { AudioModule } from 'expo-audio';
+import { desktopMicrophonePermissionMessage } from '@/brand/desktopBrand';
 
 export interface MicrophonePermissionResult {
   granted: boolean;
@@ -83,9 +84,7 @@ export async function checkMicrophonePermission(): Promise<MicrophonePermissionR
  */
 export function showMicrophonePermissionDeniedAlert(canAskAgain: boolean = false) {
   const title = 'Microphone Access Required';
-  const message = canAskAgain
-    ? 'Happy needs access to your microphone for voice chat. Please grant permission when prompted.'
-    : 'Happy needs access to your microphone for voice chat. Please enable microphone access in your device settings.';
+  const message = desktopMicrophonePermissionMessage(canAskAgain);
 
   if (Platform.OS === 'web') {
     // Web: Show browser-specific instructions

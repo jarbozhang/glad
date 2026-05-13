@@ -18,6 +18,13 @@ import { sync } from '@/sync/sync';
 import { trackPaywallButtonClicked } from '@/track';
 import { getVoiceExperimentStatus, getVoiceUpsellVariantLabel } from '@/realtime/voiceExperiment';
 import { getVoiceLocalCounters, resetVoiceLocalCounters } from '@/sync/persistence';
+import {
+    desktopVoiceByoDescription,
+    desktopVoiceBypassTokenSubtitle,
+    desktopVoiceCustomAgentIdDescription,
+    desktopVoiceDeveloperFooter,
+    desktopVoiceServerLabel,
+} from '@/brand/desktopBrand';
 
 function formatVoiceTime(totalSeconds: number): string {
     const mins = Math.floor(totalSeconds / 60);
@@ -60,7 +67,7 @@ export default React.memo(function VoiceSettingsScreen() {
     const handleCustomAgentId = React.useCallback(async () => {
         const value = await Modal.prompt(
             t('settingsVoice.customAgentId'),
-            t('settingsVoice.customAgentIdDescription'),
+            desktopVoiceCustomAgentIdDescription(),
             {
                 defaultValue: voiceCustomAgentId ?? '',
                 placeholder: t('settingsVoice.customAgentIdPlaceholder'),
@@ -117,7 +124,7 @@ export default React.memo(function VoiceSettingsScreen() {
         const upsellVariant = getVoiceUpsellVariantLabel(voiceExperimentStatus.upsellVariant);
         const gatingMode = voiceExperimentStatus.gatingMode === 'direct-byo-agent'
             ? 'direct BYO agent bypass'
-            : 'Happy server gate';
+            : `${desktopVoiceServerLabel()} gate`;
 
         return [
             `voice-upsell: ${upsellVariant}`,
@@ -192,7 +199,7 @@ export default React.memo(function VoiceSettingsScreen() {
             {devModeEnabled && (
                 <ItemGroup
                     title="Developer"
-                    footer="Developer-only diagnostics and local override controls for the current voice rollout. The paid voice gate runs through Happy server unless Direct Connection and a custom ElevenLabs agent are both enabled."
+                    footer={desktopVoiceDeveloperFooter()}
                 >
                     <Item
                         title="Voice Experiment Override"
@@ -236,7 +243,7 @@ export default React.memo(function VoiceSettingsScreen() {
             {/* Bring Your Own Agent */}
             <ItemGroup
                 title={t('settingsVoice.byoTitle')}
-                footer={t('settingsVoice.byoDescription')}
+                footer={desktopVoiceByoDescription()}
             >
                 <Item
                     title={t('settingsVoice.customAgentId')}
@@ -246,7 +253,7 @@ export default React.memo(function VoiceSettingsScreen() {
                 />
                 <Item
                     title={t('settingsVoice.bypassToken')}
-                    subtitle={t('settingsVoice.bypassTokenSubtitle')}
+                    subtitle={desktopVoiceBypassTokenSubtitle()}
                     icon={<Ionicons name="flash-outline" size={29} color="#FF3B30" />}
                     rightElement={
                         <Switch
@@ -259,10 +266,10 @@ export default React.memo(function VoiceSettingsScreen() {
 
             {/* Prompt Guide — shown when custom agent is configured */}
             {voiceCustomAgentId && (
-                <ItemGroup
-                    title={t('settingsVoice.promptGuideTitle')}
-                    footer={t('settingsVoice.promptGuideDescription')}
-                >
+            <ItemGroup
+                title={t('settingsVoice.promptGuideTitle')}
+                footer={t('settingsVoice.promptGuideDescription')}
+            >
                     <Item
                         title={t('settingsVoice.customAgentId')}
                         subtitle={voiceCustomAgentId}

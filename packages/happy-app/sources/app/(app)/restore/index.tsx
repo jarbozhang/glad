@@ -12,6 +12,7 @@ import { Modal } from '@/modal';
 import { t } from '@/text';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { QRCode } from '@/components/qr/QRCode';
+import { desktopRestoreOpenMobileInstruction } from '@/brand/desktopBrand';
 
 const stylesheet = StyleSheet.create((theme) => ({
     scrollView: {
@@ -137,7 +138,7 @@ export default function Restore() {
 
                 <View style={{justifyContent: 'flex-end' }}>
                     <Text style={styles.secondInstructionText}>
-                        1. Open Happy on your mobile device{'\n'}
+                        1. {desktopRestoreOpenMobileInstruction()}{'\n'}
                         2. Go to Settings → Account{'\n'}
                         3. Tap "Link New Device"{'\n'}
                         4. Scan this QR code

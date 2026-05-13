@@ -30,7 +30,7 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let menu = build_menu(app, true, &[])?;
 
     let mut tray_builder = TrayIconBuilder::new()
-        .tooltip("Happy");
+        .tooltip("BFELAB");
 
     // Use app icon if available
     if let Some(icon) = app.default_window_icon() {
@@ -119,7 +119,7 @@ fn build_menu(
     builder = builder.item(&PredefinedMenuItem::separator(app)?);
 
     // Quit
-    builder = builder.item(&MenuItemBuilder::with_id("quit", "Quit Happy").build(app)?);
+    builder = builder.item(&MenuItemBuilder::with_id("quit", "Quit BFELAB").build(app)?);
 
     builder.build()
 }

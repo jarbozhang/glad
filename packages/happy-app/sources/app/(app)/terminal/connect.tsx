@@ -10,6 +10,7 @@ import { ItemList } from '@/components/ItemList';
 import { ItemGroup } from '@/components/ItemGroup';
 import { Item } from '@/components/Item';
 import { t } from '@/text';
+import { desktopTerminalRequestDescription } from '@/brand/desktopBrand';
 
 export default function TerminalConnectScreen() {
     const router = useRouter();
@@ -179,7 +180,7 @@ export default function TerminalConnectScreen() {
                         textAlign: 'center',
                         lineHeight: 20 
                     }}>
-                        {t('terminal.terminalRequestDescription')}
+                        {desktopTerminalRequestDescription()}
                     </Text>
                 </View>
             </ItemGroup>

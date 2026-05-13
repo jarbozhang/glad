@@ -14,6 +14,7 @@ import { trackAccountCreated, trackAccountRestored } from '@/track';
 import { HomeHeaderNotAuth } from "@/components/HomeHeader";
 import { MainView } from "@/components/MainView";
 import { t } from '@/text';
+import { desktopBrandAccessibilityLabel, desktopLogotypeSource, desktopWelcomeSubtitle, desktopWelcomeTitle } from '@/brand/desktopBrand';
 
 export default function Home() {
     const auth = useAuth();
@@ -52,15 +53,16 @@ function NotAuthenticated() {
     const portraitLayout = (
         <View style={styles.portraitContainer}>
             <Image
-                source={theme.dark ? require('@/assets/images/logotype-light.png') : require('@/assets/images/logotype-dark.png')}
+                source={desktopLogotypeSource(theme.dark)}
                 resizeMode="contain"
                 style={styles.logo}
+                accessibilityLabel={desktopBrandAccessibilityLabel()}
             />
             <Text style={styles.title}>
-                {t('welcome.title')}
+                {desktopWelcomeTitle()}
             </Text>
             <Text style={styles.subtitle}>
-                {t('welcome.subtitle')}
+                {desktopWelcomeSubtitle()}
             </Text>
             {Platform.OS !== 'android' && Platform.OS !== 'ios' ? (
                 <>
@@ -111,17 +113,18 @@ function NotAuthenticated() {
             <View style={styles.landscapeInner}>
                 <View style={styles.landscapeLogoSection}>
                     <Image
-                        source={theme.dark ? require('@/assets/images/logotype-light.png') : require('@/assets/images/logotype-dark.png')}
+                        source={desktopLogotypeSource(theme.dark)}
                         resizeMode="contain"
                         style={styles.logo}
+                        accessibilityLabel={desktopBrandAccessibilityLabel()}
                     />
                 </View>
                 <View style={styles.landscapeContentSection}>
                     <Text style={styles.landscapeTitle}>
-                        {t('welcome.title')}
+                        {desktopWelcomeTitle()}
                     </Text>
                     <Text style={styles.landscapeSubtitle}>
-                        {t('welcome.subtitle')}
+                        {desktopWelcomeSubtitle()}
                     </Text>
                     {Platform.OS !== 'android' && Platform.OS !== 'ios'
                         ? (<>

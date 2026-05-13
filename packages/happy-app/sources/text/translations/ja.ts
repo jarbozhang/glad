@@ -460,6 +460,14 @@ export const ja: TranslationStructure = {
         hideArchived: 'アーカイブを非表示',
     },
 
+    desktopBrand: {
+        name: 'BFELAB',
+        welcomeTitle: 'BFELAB desktop',
+        welcomeSubtitle: 'Control AI coding sessions from a desktop app. End-to-end encrypted and compatible with the existing happy CLI.',
+        terminalRequestDescription: 'A terminal is requesting to connect to your BFELAB account. This will allow the terminal to send and receive messages securely.',
+        restoreOpenMobileInstruction: 'Open the companion mobile app on your mobile device',
+    },
+
     toolView: {
         input: '入力',
         output: '出力',

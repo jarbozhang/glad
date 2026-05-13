@@ -10,6 +10,7 @@ import { getServerInfo } from '@/sync/serverConfig';
 import { Image } from 'expo-image';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
+import { desktopBrandAccessibilityLabel, desktopBrandTitle, desktopLogoSource } from '@/brand/desktopBrand';
 
 const stylesheet = StyleSheet.create((theme, runtime) => ({
     headerButton: {
@@ -153,10 +154,11 @@ function HeaderLeft() {
     return (
         <View style={styles.logoContainer}>
             <Image
-                source={require('@/assets/images/logo-black.png')}
+                source={desktopLogoSource(theme.dark)}
                 contentFit="contain"
                 style={[{ width: 24, height: 24 }]}
                 tintColor={theme.colors.header.tint}
+                accessibilityLabel={desktopBrandAccessibilityLabel()}
             />
         </View>
     );
@@ -215,7 +217,7 @@ function HeaderTitleWithSubtitle({ subtitle }: { subtitle?: string }) {
     return (
         <View style={styles.titleContainer}>
             <Text style={styles.titleText}>
-                {t('sidebar.sessionsTitle')}
+                {desktopBrandTitle()}
             </Text>
             {hasCustomSubtitle && (
                 <Text style={styles.subtitleText}>

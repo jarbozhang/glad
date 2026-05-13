@@ -15,6 +15,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
 import { useInboxHasContent } from '@/hooks/useInboxHasContent';
 import { Ionicons } from '@expo/vector-icons';
+import { desktopBrandAccessibilityLabel, desktopBrandTitle, desktopLogoSource } from '@/brand/desktopBrand';
 
 const stylesheet = StyleSheet.create((theme, runtime) => ({
     container: {
@@ -198,7 +199,7 @@ export const SidebarView = React.memo(() => {
     // Title content used in both centered and left-justified modes (DRY)
     const titleContent = (
         <>
-            <Text style={styles.titleText}>{t('sidebar.sessionsTitle')}</Text>
+            <Text style={styles.titleText}>{desktopBrandTitle()}</Text>
             {connectionStatus.text && (
                 <View style={styles.statusContainer}>
                     <StatusDot
@@ -222,9 +223,10 @@ export const SidebarView = React.memo(() => {
                     {/* Logo - always first */}
                     <View style={styles.logoContainer}>
                         <Image
-                            source={theme.dark ? require('@/assets/images/logo-white.png') : require('@/assets/images/logo-black.png')}
+                            source={desktopLogoSource(theme.dark)}
                             contentFit="contain"
                             style={[styles.logo, { height: 24, width: 24 }]}
+                            accessibilityLabel={desktopBrandAccessibilityLabel()}
                         />
                     </View>
 

@@ -1,9 +1,14 @@
 const variant = process.env.APP_ENV || 'development';
+const target = process.env.APP_TARGET || 'app';
+const isDesktopTarget = target === 'desktop';
 const name = {
     development: "Happy (dev)",
     preview: "Happy (preview)",
     production: "Happy"
 }[variant];
+const displayName = isDesktopTarget
+    ? (variant === 'production' ? "BFELAB" : `BFELAB (${variant === 'preview' ? 'preview' : 'dev'})`)
+    : name;
 const bundleId = {
     development: "com.slopus.happy.dev",
     preview: "com.slopus.happy.preview",
@@ -24,12 +29,12 @@ const consoleLoggingDefault = {
 
 export default {
     expo: {
-        name,
-        slug: "happy",
+        name: displayName,
+        slug: isDesktopTarget ? "bfelab" : "happy",
         version: "1.7.0",
         runtimeVersion: "21",
         orientation: "default",
-        icon: "./sources/assets/images/icon.png",
+        icon: isDesktopTarget ? "./sources/assets/images/bfelab-icon.png" : "./sources/assets/images/icon.png",
         scheme: "happy",
         userInterfaceStyle: "automatic",
         ios: {
@@ -85,7 +90,7 @@ export default {
         web: {
             bundler: "metro",
             output: "single",
-            favicon: "./sources/assets/images/favicon.png"
+            favicon: isDesktopTarget ? "./sources/assets/images/bfelab-favicon.png" : "./sources/assets/images/favicon.png"
         },
         plugins: [
             require("./plugins/withEinkCompatibility.js"),

@@ -29,7 +29,7 @@ jobs:
             os: macos-latest
             args: --target aarch64-apple-darwin
             rust-target: aarch64-apple-darwin
-            artifact-name: happy-macos-aarch64
+            artifact-name: bfelab-macos-aarch64
             artifact-path: |
               packages/happy-app/src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.app
               packages/happy-app/src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
@@ -37,7 +37,7 @@ jobs:
             os: macos-latest
             args: --target x86_64-apple-darwin
             rust-target: x86_64-apple-darwin
-            artifact-name: happy-macos-x64
+            artifact-name: bfelab-macos-x64
             artifact-path: |
               packages/happy-app/src-tauri/target/x86_64-apple-darwin/release/bundle/**/*.app
               packages/happy-app/src-tauri/target/x86_64-apple-darwin/release/bundle/**/*.dmg
@@ -45,7 +45,7 @@ jobs:
             os: windows-latest
             args: ""
             rust-target: ""
-            artifact-name: happy-windows
+            artifact-name: bfelab-windows
             artifact-path: |
               packages/happy-app/src-tauri/target/release/bundle/**/*.msi
               packages/happy-app/src-tauri/target/release/bundle/**/*.exe
@@ -53,7 +53,7 @@ jobs:
             os: ubuntu-22.04
             args: ""
             rust-target: ""
-            artifact-name: happy-linux
+            artifact-name: bfelab-linux
             artifact-path: |
               packages/happy-app/src-tauri/target/release/bundle/**/*.AppImage
               packages/happy-app/src-tauri/target/release/bundle/**/*.deb

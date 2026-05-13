@@ -38,7 +38,7 @@
     "tauri:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "tauri:build:dev": "tauri build --config src-tauri/tauri.dev.conf.json",
     "tauri:build:preview": "tauri build --config src-tauri/tauri.preview.conf.json",
-    "tauri:build:production": "tauri build"
+    "tauri:build:production": "cross-env APP_ENV=production APP_TARGET=desktop tauri build"
   },
   "jest": {
     "preset": "jest-expo"

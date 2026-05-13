@@ -1,11 +1,15 @@
 {
   "$schema": "../../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Happy (dev)",
-  "identifier": "com.slopus.happy.dev",
+  "productName": "BFELAB (dev)",
+  "identifier": "com.bfelab.desktop.dev",
+  "build": {
+    "beforeDevCommand": "pnpm exec cross-env APP_ENV=development APP_TARGET=desktop pnpm start",
+    "beforeBuildCommand": "pnpm exec cross-env APP_ENV=development APP_TARGET=desktop pnpm exec expo export --platform web --output-dir dist"
+  },
   "app": {
     "windows": [
       {
-        "title": "Happy (dev)"
+        "title": "BFELAB (dev)"
       }
     ]
   }

@@ -32,6 +32,7 @@ import {
     syncCurrentPushToken,
     type PushPermissionInfo,
 } from '@/sync/pushRegistration';
+import { desktopBrandTitle } from '@/brand/desktopBrand';
 
 function formatPushPermissionLabel(permission: PushPermissionInfo | null): string {
     if (!permission) {
@@ -116,6 +117,7 @@ export default React.memo(() => {
     const [requestingPushPermission, setRequestingPushPermission] = useState(false);
     const [refreshingPushToken, setRefreshingPushToken] = useState(false);
     const [deletingPushToken, setDeletingPushToken] = useState<string | null>(null);
+    const brandTitle = desktopBrandTitle();
 
     // Get the current secret key
     const currentSecret = auth.credentials?.secret || '';
@@ -243,7 +245,7 @@ export default React.memo(() => {
             await loadPushSettings();
 
             if (result.openedSettings) {
-                Modal.alert('Open Settings', 'The system will not show the permission prompt again, so Happy opened Settings instead.');
+                Modal.alert('Open Settings', `The system will not show the permission prompt again, so ${brandTitle} opened Settings instead.`);
                 return;
             }
 
@@ -254,7 +256,7 @@ export default React.memo(() => {
         } finally {
             setRequestingPushPermission(false);
         }
-    }, [auth.credentials, loadPushSettings]);
+    }, [auth.credentials, brandTitle, loadPushSettings]);
 
     const handleRefreshCurrentPushToken = useCallback(async () => {
         if (!auth.credentials) {

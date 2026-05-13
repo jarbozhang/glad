@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 import { useUnistyles } from 'react-native-unistyles';
+import { desktopBrandAccessibilityLabel, desktopLogoSource } from '@/brand/desktopBrand';
 
 /**
  * Shared header logo component used across all main tabs.
@@ -18,10 +19,11 @@ export const HeaderLogo = React.memo(() => {
             justifyContent: 'center',
         }}>
             <Image
-                source={require('@/assets/images/logo-black.png')}
+                source={desktopLogoSource(theme.dark)}
                 contentFit="contain"
                 style={{ width: 24, height: 24 }}
                 tintColor={theme.colors.header.tint}
+                accessibilityLabel={desktopBrandAccessibilityLabel()}
             />
         </View>
     );
