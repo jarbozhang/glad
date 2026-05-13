@@ -119,9 +119,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          if find packages/happy-app/src-tauri/target -path "*/release/bundle/*" \( -iname "*preview*" -o -iname "*dev*" \) | grep -q .; then
-            echo "Production desktop bundle must not contain preview/dev names."
-            find packages/happy-app/src-tauri/target -path "*/release/bundle/*" \( -iname "*preview*" -o -iname "*dev*" \)
+          artifact_matches=$(
+            find packages/happy-app/src-tauri/target \
+              \( -path "*/release/bundle/macos/*.app" \
+              -o -path "*/release/bundle/dmg/*.dmg" \
+              -o -path "*/release/bundle/nsis/*.exe" \
+              -o -path "*/release/bundle/msi/*.msi" \
+              -o -path "*/release/bundle/appimage/*.AppImage" \
+              -o -path "*/release/bundle/deb/*.deb" \
+              -o -path "*/release/bundle/rpm/*.rpm" \) \
+              \( -iname "*preview*" -o -iname "*dev*" \) \
+              -print
+          )
+
+          if [ -n "$artifact_matches" ]; then
+            echo "Production desktop bundle artifact names must not contain preview/dev names."
+            printf "%s\n" "$artifact_matches"
             exit 1
           fi
 
