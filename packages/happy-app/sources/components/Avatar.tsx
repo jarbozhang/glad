@@ -6,9 +6,10 @@ import { AvatarGradient } from "./AvatarGradient";
 import { AvatarBrutalist } from "./AvatarBrutalist";
 import { useSetting } from '@/sync/storage';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { normalizeAvatarId } from './avatarUtils';
 
 interface AvatarProps {
-    id: string;
+    id?: string | null;
     title?: boolean;
     square?: boolean;
     size?: number;
@@ -45,7 +46,8 @@ const styles = StyleSheet.create((theme) => ({
 }));
 
 export const Avatar = React.memo((props: AvatarProps) => {
-    const { flavor, size = 48, imageUrl, thumbhash, ...avatarProps } = props;
+    const { id, flavor, size = 48, imageUrl, thumbhash, ...avatarProps } = props;
+    const avatarId = normalizeAvatarId(id);
     const avatarStyle = useSetting('avatarStyle');
     const showFlavorIcons = useSetting('showFlavorIcons');
     const { theme } = useUnistyles();
@@ -126,7 +128,7 @@ export const Avatar = React.memo((props: AvatarProps) => {
     if (showFlavorIcons && flavor !== null) {
         return (
             <View style={[styles.container, { width: size, height: size }]}>
-                <AvatarComponent {...avatarProps} size={size} />
+                <AvatarComponent {...avatarProps} id={avatarId} size={size} />
                 <View style={[styles.flavorIcon, {
                     width: circleSize,
                     height: circleSize,
@@ -145,5 +147,5 @@ export const Avatar = React.memo((props: AvatarProps) => {
     }
 
     // Return avatar without wrapper when not showing flavor icons
-    return <AvatarComponent {...avatarProps} size={size} />;
+    return <AvatarComponent {...avatarProps} id={avatarId} size={size} />;
 });

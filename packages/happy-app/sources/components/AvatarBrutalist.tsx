@@ -1,9 +1,10 @@
 import * as React from "react";
 import { View } from "react-native";
 import { Image } from "expo-image";
+import { hashAvatarValue, normalizeAvatarId } from './avatarUtils';
 
 interface AvatarBrutalistProps {
-    id: string;
+    id?: string | null;
     title?: boolean;
     square?: boolean;
     size?: number;
@@ -450,21 +451,12 @@ const colorPairs = [
     { tint: '#84E600', background: '#C026D3' }  // Lime → Magenta
 ];
 
-function hashCode(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash);
-}
-
 export const AvatarBrutalist = React.memo((props: AvatarBrutalistProps) => {
     const { id, size = 32, square = false, monochrome = false } = props;
+    const avatarId = normalizeAvatarId(id);
 
-    const imageIndex = hashCode(id) % allImages.length;
-    const colorIndex = hashCode(id + 'color') % colorPairs.length;
+    const imageIndex = hashAvatarValue(avatarId) % allImages.length;
+    const colorIndex = hashAvatarValue(`${avatarId}color`) % colorPairs.length;
 
     const imageSource = allImages[imageIndex];
     const colorPair = colorPairs[colorIndex];
