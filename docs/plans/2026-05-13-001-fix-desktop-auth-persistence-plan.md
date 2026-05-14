@@ -9,7 +9,7 @@ date: 2026-05-13
 
 ## 摘要
 
-BFELAB 桌面端当前在每次完整退出后需要重新关联/认证。计划将桌面端认证凭据从 WebView `localStorage` 迁移到 Tauri app-scoped 持久化存储，并保留旧 `localStorage` 凭据迁移、显式退出登录清理、dev 构建不触发 macOS Keychain 弹窗等行为。
+Happy 桌面端当前在每次完整退出后需要重新关联/认证。计划将桌面端认证凭据从 WebView `localStorage` 迁移到 Tauri app-scoped 持久化存储，并保留旧 `localStorage` 凭据迁移、显式退出登录清理、dev 构建不触发 macOS Keychain 弹窗等行为。
 
 ---
 
@@ -17,7 +17,7 @@ BFELAB 桌面端当前在每次完整退出后需要重新关联/认证。计划
 
 桌面端启动路径是 `packages/happy-app/sources/app/_layout.tsx` 调用 `TokenStorage.getCredentials()`，如果拿到凭据就执行 `syncRestore(credentials)`；如果拿不到，就进入重新关联/认证。当前 Tauri 分支的 `TokenStorage` 使用加密后的浏览器 `localStorage` 保存 `auth_credentials`。
 
-生产桌面端在 `packages/happy-app/src-tauri/src/lib.rs` 中通过 `portpicker::pick_unused_port()` 每次选择随机 localhost 端口，并让 WebView 导航到 `http://localhost:{port}`。浏览器 `localStorage` 按 origin 隔离，端口变化会导致上次写入的 `auth_credentials` 不在当前 origin 下可见。这解释了“退出再打开后像认证丢失”的现象。关闭窗口本身不会清认证：macOS close 只 hide window，托盘 `Quit BFELAB` 才 `app.exit(0)`；显式清认证只在 `AuthContext.logout()` 路径。
+生产桌面端在 `packages/happy-app/src-tauri/src/lib.rs` 中通过 `portpicker::pick_unused_port()` 每次选择随机 localhost 端口，并让 WebView 导航到 `http://localhost:{port}`。浏览器 `localStorage` 按 origin 隔离，端口变化会导致上次写入的 `auth_credentials` 不在当前 origin 下可见。这解释了“退出再打开后像认证丢失”的现象。关闭窗口本身不会清认证：macOS close 只 hide window，托盘 `Quit Happy` 才 `app.exit(0)`；显式清认证只在 `AuthContext.logout()` 路径。
 
 ---
 
@@ -252,16 +252,16 @@ BFELAB 桌面端当前在每次完整退出后需要重新关联/认证。计划
 **方案：**
 - 在单元测试中覆盖 `_layout.tsx` 依赖的核心 contract：`TokenStorage.getCredentials()` 在桌面端可跨“模拟重启”返回同一凭据。
 - 如果直接测试 `_layout.tsx` 成本过高，不为了形式引入脆弱组件测试；优先把持久化 contract 覆盖扎实。
-- 更新桌面 e2e checklist，加入 BFELAB 桌面端认证恢复场景。
+- 更新桌面 e2e checklist，加入 Happy 桌面端认证恢复场景。
 - 手工验证时使用 production/preview Tauri 构建，因为 dev 仍可能走不同 backend。
 
 **遵循模式：**
 - `packages/happy-app/sources/trash/e2e-test-checklist.md` 已用于桌面端手工验收条目。
 
 **测试场景：**
-- 登录/关联成功后退出 BFELAB，再重新打开：直接进入已认证 app，不显示重新关联。
+- 登录/关联成功后退出 Happy，再重新打开：直接进入已认证 app，不显示重新关联。
 - 关闭窗口再从 Dock/托盘恢复：仍保持认证。
-- 托盘 `Quit BFELAB` 后重新打开：仍保持认证。
+- 托盘 `Quit Happy` 后重新打开：仍保持认证。
 - 设置页 logout 后退出并重新打开：要求重新认证。
 - 桌面端 store 中密文损坏：app 不崩溃，并进入未认证状态。
 - dev/unsigned build 启动：不出现每次启动 Keychain password prompt。
@@ -296,13 +296,13 @@ BFELAB 桌面端当前在每次完整退出后需要重新关联/认证。计划
 - 运行 `pnpm --filter happy-app test -- tokenStorage` 或项目现有等价 Vitest 命令，覆盖 `TokenStorage` 和 desktop adapter。
 - 运行 `pnpm --filter happy-app typecheck`，确认动态 import、store API 类型和平台分支通过 TypeScript。
 - 运行 `pnpm --filter happy-app tauri:build:preview` 或 CI desktop build，确认 Tauri Rust/JS 插件 wiring 通过。
-- 手工安装/运行 BFELAB preview 或 production 桌面构建，完成关联后执行关闭窗口、托盘 Quit、重启 app、logout 后重启四组场景。
+- 手工安装/运行 Happy preview 或 production 桌面构建，完成关联后执行关闭窗口、托盘 Quit、重启 app、logout 后重启四组场景。
 
 ---
 
 ## 交付标准
 
-- BFELAB 桌面端正常退出后重新打开不再要求重新关联/认证。
+- Happy 桌面端正常退出后重新打开不再要求重新关联/认证。
 - logout 后不会因为旧 localStorage 或新 store 残留而自动恢复认证。
 - CI 覆盖新旧存储迁移和清理行为。
 - dev/unsigned 桌面构建没有重新出现 Keychain password prompt。
