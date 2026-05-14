@@ -94,12 +94,14 @@ export const pl: TranslationStructure = {
         permissionRequired: 'wymagane uprawnienie',
         activeNow: 'Aktywny teraz',
         unknown: 'nieznane',
+        unread: 'nowe wyniki',
     },
 
     time: {
         justNow: 'teraz',
         minutesAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'minuta', few: 'minuty', many: 'minut' })} temu`,
         hoursAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'godzina', few: 'godziny', many: 'godzin' })} temu`,
+        daysAgo: ({ count }: { count: number }) => `${count} ${plural({ count, one: 'dzień', few: 'dni', many: 'dni' })} temu`,
     },
 
     connect: {
@@ -115,6 +117,14 @@ export const pl: TranslationStructure = {
         connectAccount: 'Połącz konto',
         github: 'GitHub',
         machines: 'Maszyny',
+        showOfflineMachines: ({ count }: { count: number }) => {
+            const mod10 = count % 10;
+            const mod100 = count % 100;
+            if (count === 1) return 'Pokaż 1 maszynę offline';
+            if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `Pokaż ${count} maszyny offline`;
+            return `Pokaż ${count} maszyn offline`;
+        },
+        hideOfflineMachines: 'Ukryj maszyny offline',
         features: 'Funkcje',
         social: 'Społeczność',
         account: 'Konto',
@@ -180,6 +190,12 @@ export const pl: TranslationStructure = {
         showLineNumbersInToolViewsDescription: 'Wyświetlaj numery linii w różnicach widoków narzędzi',
         wrapLinesInDiffs: 'Zawijanie linii w różnicach',
         wrapLinesInDiffsDescription: 'Zawijaj długie linie zamiast przewijania poziomego w widokach różnic',
+        diffStyle: 'Widok różnic',
+        diffStyleDescription: 'Pokazuj różnice w jednej kolumnie (unified) lub obok siebie (split). Widok split działa tylko w przeglądarce.',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: 'Zawsze pokazuj rozmiar kontekstu',
         alwaysShowContextSizeDescription: 'Wyświetlaj użycie kontekstu nawet gdy nie jest blisko limitu',
         avatarStyle: 'Styl awatara',
@@ -191,8 +207,6 @@ export const pl: TranslationStructure = {
         },
         showFlavorIcons: 'Pokaż ikony dostawcy AI',
         showFlavorIconsDescription: 'Wyświetlaj ikony dostawcy AI na awatarach sesji',
-        compactSessionView: 'Kompaktowy widok sesji',
-        compactSessionViewDescription: 'Pokazuj aktywne sesje w bardziej zwartym układzie',
     },
 
     settingsFeatures: {
@@ -214,6 +228,13 @@ export const pl: TranslationStructure = {
         markdownCopyV2Subtitle: 'Długie naciśnięcie otwiera modal kopiowania',
         hideInactiveSessions: 'Ukryj nieaktywne sesje',
         hideInactiveSessionsSubtitle: 'Wyświetlaj tylko aktywne czaty na liście',
+        privacy: 'Prywatność',
+        privacyDescription: 'Całkowicie wyłącza wszystkie analizy i telemetrię. Żadne dane nie będą wysyłane do PostHog ani żadnego innego serwisu śledzącego.',
+        disableAnalytics: 'Wyłącz analitykę',
+        analyticsDisabled: 'Wszystkie śledzenie i telemetria wyłączone',
+        analyticsEnabled: 'Anonimowa analityka użytkowania aktywna',
+        imageUpload: 'Przesyłanie obrazów',
+        imageUploadSubtitle: 'Dołącz obrazy do wiadomości, aby Claude mógł je przeanalizować',
     },
 
     errors: {
@@ -286,6 +307,24 @@ export const pl: TranslationStructure = {
         inputPlaceholder: 'Wpisz wiadomość...',
         inactiveArchived: 'Ta sesja jest nieaktywna.',
         resumeFromTerminal: 'Aby wznowić ją z terminala:',
+        newChat: 'Nowy czat',
+        forkAction: 'Rozwidl sesję',
+        forkSubtitle: 'Kontynuuj w nowej sesji z tym samym kontekstem',
+        duplicateAction: 'Duplikuj od wiadomości…',
+        duplicateSubtitle: 'Cofnij się do wybranego punktu i spróbuj inaczej',
+        forkFromHere: 'Rozwidl od tego miejsca',
+        duplicateSheetTitle: 'Wybierz punkt cofnięcia',
+        duplicateSheetSubtitle: 'Nowa sesja zachowa wybraną turę w całości (twoja wiadomość i odpowiedź agenta) i odrzuci wszystkie kolejne wiadomości.',
+        duplicateSheetConfirm: 'Duplikuj',
+        duplicateSheetEmpty: 'W tej sesji nie ma jeszcze wiadomości, do których można się cofnąć.',
+        duplicateRowDisabled: 'Tej wiadomości nie można użyć jako punktu cofnięcia.',
+        forkedFromLabel: 'Rozwidlone z',
+        forkedFromSubtitle: 'Otwórz sesję, z której powstało rozwidlenie',
+        forkErrorOffline: 'Maszyna jest offline. Rozwidlenie jest dostępne tylko gdy maszyna sesji jest online.',
+        forkErrorMissingUuid: 'Wybrany punkt cofnięcia nie istnieje już w sesji źródłowej — spróbuj rozwidlić bez przycinania.',
+        forkErrorMissingMetadata: 'Brak metadanych sesji wymaganych do rozwidlenia.',
+        forkErrorGeneric: 'Nie udało się rozwidlić sesji.',
+        forkClaudeOnly: 'Rozwidlenie jest obecnie obsługiwane tylko dla sesji Claude.',
     },
 
     commandPalette: {
@@ -386,7 +425,7 @@ export const pl: TranslationStructure = {
             runIt: 'Uruchom je',
             runCliAuth: 'Uruchom happy auth login lub happy',
             scanQrCode: 'Zeskanuj kod QR',
-            pasteTerminalUrl: 'Wklej URL z terminala',
+            pasteTerminalUrl: 'Wklej adres URL z terminala',
             openCamera: 'Otwórz kamerę',
         },
     },
@@ -467,6 +506,11 @@ export const pl: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: 'Pokaż zarchiwizowane',
         hideArchived: 'Ukryj zarchiwizowane',
+        newSession: 'Nowa sesja',
+    },
+
+    zen: {
+        toggle: 'Tryb zen',
     },
 
     desktopBrand: {
@@ -549,6 +593,7 @@ export const pl: TranslationStructure = {
     },
 
     files: {
+        changes: 'Zmiany',
         searchPlaceholder: 'Wyszukaj pliki...',
         detachedHead: 'odłączony HEAD',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `${staged} przygotowanych • ${unstaged} nieprzygotowanych`,
@@ -570,7 +615,19 @@ export const pl: TranslationStructure = {
         file: 'Plik',
         fileEmpty: 'Plik jest pusty',
         noChanges: 'Brak zmian do wyświetlenia',
+        noChangesTitle: 'Brak zmian',
+        noChangesSubtitle: 'Drzewo robocze jest czyste',
         deleted: 'Usunięty',
+        changedFiles: ({ count }: { count: number }) => `${count} ${count === 1 ? 'zmieniony plik' : 'zmienionych plików'}`,
+        allFiles: 'Wszystkie pliki',
+        editFile: 'Edytuj',
+        saveFile: 'Zapisz',
+        failedToRead: 'Nie udało się odczytać pliku',
+        failedToSave: 'Nie udało się zapisać pliku',
+        fileConflict: 'Konflikt pliku',
+        fileConflictDescription: 'Ten plik został zmodyfikowany na urządzeniu podczas edycji. Załaduj ponownie aby zobaczyć najnowszą wersję.',
+        reload: 'Załaduj ponownie',
+        overwrite: 'Nadpisz',
     },
 
     settingsVoice: {
@@ -781,6 +838,12 @@ export const pl: TranslationStructure = {
         lastDetected: 'Ostatnio wykryto',
         untitledSession: 'Sesja bez nazwy',
         back: 'Wstecz',
+        dangerZone: 'Strefa niebezpieczna',
+        delete: 'Usuń maszynę',
+        deleteFooter: 'Usuń tę maszynę ze swojego konta. Historia sesji zostanie zachowana, ale nie będziesz mógł uruchamiać nowych sesji na tej maszynie.',
+        deleteConfirmTitle: 'Usunąć tę maszynę?',
+        deleteConfirmMessage: 'Maszyna zostanie usunięta z twojego konta. Historia sesji zostanie zachowana, ale nie będziesz mógł uruchamiać nowych sesji, dopóki ponownie nie podłączysz demona.',
+        deleteFailed: 'Nie udało się usunąć maszyny.',
     },
 
     message: {
@@ -932,14 +995,19 @@ export const pl: TranslationStructure = {
         noData: 'Brak danych o użyciu',
     },
 
-    contextPanel: {
-        noSession: 'Otwórz sesję, aby przeglądać pliki',
-        searchPlaceholder: 'Szukaj plików...',
-        upload: 'Prześlij',
-        uploadToCurrentDirectory: 'Prześlij do bieżącego katalogu',
-        dropFilesToUpload: 'Upuść pliki, aby je przesłać',
-        uploading: 'Przesyłanie...',
-        downloading: 'Pobieranie...',
+    imageUpload: {
+        permissionTitle: 'Dostęp do biblioteki zdjęć',
+        permissionMessage: 'Zezwól na dostęp do biblioteki zdjęć, aby załączać obrazy do wiadomości.',
+        limitTitle: 'Osiągnięto limit obrazów',
+        limitMessage: ({ max }: { max: number }) => `Możesz dołączyć maksymalnie ${max} obrazów na wiadomość.`,
+        fileTooLargeTitle: 'Plik zbyt duży',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}" przekracza limit ${maxMb}MB i nie został dodany.`,
+        uploadFailedTitle: 'Przesyłanie nieudane',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? 'Nie udało się przesłać jednego zdjęcia i nie zostało wysłane.'
+            : `Nie udało się przesłać ${count} zdjęć i nie zostały wysłane.`,
+        notSupportedTitle: 'Obrazy nieobsługiwane',
+        notSupportedMessage: 'Ten agent nie obsługuje załączników obrazów. Wysłano tylko tekst.',
     },
 
     feed: {

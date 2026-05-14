@@ -84,12 +84,14 @@ export const zhHant: TranslationStructure = {
         permissionRequired: '需要權限',
         activeNow: '目前活躍',
         unknown: '未知',
+        unread: '新結果',
     },
 
     time: {
         justNow: '剛剛',
         minutesAgo: ({ count }: { count: number }) => `${count} 分鐘前`,
         hoursAgo: ({ count }: { count: number }) => `${count} 小時前`,
+        daysAgo: ({ count }: { count: number }) => `${count} 天前`,
     },
 
     connect: {
@@ -105,6 +107,8 @@ export const zhHant: TranslationStructure = {
         connectAccount: '連結帳戶',
         github: 'GitHub',
         machines: '裝置',
+        showOfflineMachines: ({ count }: { count: number }) => `顯示 ${count} 台離線裝置`,
+        hideOfflineMachines: '隱藏離線裝置',
         features: '功能',
         social: '社交',
         account: '帳戶',
@@ -169,6 +173,12 @@ export const zhHant: TranslationStructure = {
         showLineNumbersInToolViewsDescription: '在工具檢視差異中顯示行號',
         wrapLinesInDiffs: '在差異中換行',
         wrapLinesInDiffsDescription: '在差異檢視中換行顯示長行而不是水平捲動',
+        diffStyle: '差異檢視',
+        diffStyleDescription: '以單欄（unified）或並排（split）顯示差異。split 檢視僅在 Web 上可用。',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: '始終顯示上下文大小',
         alwaysShowContextSizeDescription: '即使未接近限制時也顯示上下文使用情況',
         avatarStyle: '頭像風格',
@@ -180,8 +190,6 @@ export const zhHant: TranslationStructure = {
         },
         showFlavorIcons: '顯示 AI 提供者圖示',
         showFlavorIconsDescription: '在工作階段頭像上顯示 AI 提供者圖示',
-        compactSessionView: '緊湊工作階段檢視',
-        compactSessionViewDescription: '以更緊湊的版面配置顯示活躍工作階段',
     },
 
     settingsFeatures: {
@@ -203,6 +211,13 @@ export const zhHant: TranslationStructure = {
         markdownCopyV2Subtitle: '長按開啟複製強制回應視窗',
         hideInactiveSessions: '隱藏非活躍工作階段',
         hideInactiveSessionsSubtitle: '僅在清單中顯示活躍的聊天',
+        privacy: '隱私',
+        privacyDescription: '完全停用所有分析和遙測。不會向 PostHog 或任何其他追蹤服務傳送資料。',
+        disableAnalytics: '停用分析',
+        analyticsDisabled: '所有追蹤和遙測已停用',
+        analyticsEnabled: '匿名使用分析已啟用',
+        imageUpload: '圖片上傳',
+        imageUploadSubtitle: '將圖片附加到訊息中讓 Claude 分析',
     },
 
     errors: {
@@ -275,6 +290,24 @@ export const zhHant: TranslationStructure = {
         inputPlaceholder: '輸入訊息...',
         inactiveArchived: '此會話處於非活動狀態。',
         resumeFromTerminal: '若要從終端恢復它：',
+        newChat: '新對話',
+        forkAction: '分叉會話',
+        forkSubtitle: '在相同上下文中開啟新會話繼續',
+        duplicateAction: '從訊息處複製…',
+        duplicateSubtitle: '回到選定位置重新嘗試',
+        forkFromHere: '從此處分叉',
+        duplicateSheetTitle: '選擇回退點',
+        duplicateSheetSubtitle: '新會話將保留所選輪次完整內容（你的訊息與智能體的回覆），並丟棄其後的所有訊息。',
+        duplicateSheetConfirm: '複製',
+        duplicateSheetEmpty: '此會話還沒有可回退的訊息。',
+        duplicateRowDisabled: '此訊息不能作為回退點。',
+        forkedFromLabel: '分叉自',
+        forkedFromSubtitle: '開啟分叉來源的會話',
+        forkErrorOffline: '機器離線。僅當會話所在的機器在線時才能分叉。',
+        forkErrorMissingUuid: '選定的回退點已不存在於來源會話中 — 請嘗試不截斷地分叉。',
+        forkErrorMissingMetadata: '缺少分叉所需的會話元資料。',
+        forkErrorGeneric: '分叉會話失敗。',
+        forkClaudeOnly: '目前僅支援 Claude 會話的分叉。',
     },
 
     commandPalette: {
@@ -371,7 +404,7 @@ export const zhHant: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: '準備開始寫程式？',
-            connectCli: '綁定 Happy CLI',
+            connectCli: '連接 Happy CLI',
             installCli: '安裝 Happy CLI',
             runIt: '執行它',
             runCliAuth: '執行 happy auth login 或 happy',
@@ -457,6 +490,11 @@ export const zhHant: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: '顯示已封存',
         hideArchived: '隱藏已封存',
+        newSession: '新建對話',
+    },
+
+    zen: {
+        toggle: '禪模式',
     },
 
     desktopBrand: {
@@ -539,6 +577,7 @@ export const zhHant: TranslationStructure = {
     },
 
     files: {
+        changes: '變更',
         searchPlaceholder: '搜尋檔案...',
         detachedHead: '游離 HEAD',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `${staged} 已暫存 • ${unstaged} 未暫存`,
@@ -560,7 +599,19 @@ export const zhHant: TranslationStructure = {
         file: '檔案',
         fileEmpty: '檔案為空',
         noChanges: '沒有要顯示的更改',
+        noChangesTitle: '沒有變更',
+        noChangesSubtitle: '工作區是乾淨的',
         deleted: '已刪除',
+        changedFiles: ({ count }: { count: number }) => `${count} 個已變更的檔案`,
+        allFiles: '所有檔案',
+        editFile: '編輯',
+        saveFile: '儲存',
+        failedToRead: '讀取檔案失敗',
+        failedToSave: '儲存檔案失敗',
+        fileConflict: '檔案衝突',
+        fileConflictDescription: '編輯期間檔案已在裝置上被修改。重新載入以查看最新版本。',
+        reload: '重新載入',
+        overwrite: '覆蓋',
     },
 
     settingsVoice: {
@@ -771,6 +822,12 @@ export const zhHant: TranslationStructure = {
         lastDetected: '最近偵測',
         untitledSession: '無標題工作階段',
         back: '返回',
+        dangerZone: '危險區域',
+        delete: '刪除裝置',
+        deleteFooter: '從您的帳戶中移除此裝置。工作階段歷史將保留,但您將無法在此裝置上啟動新的工作階段。',
+        deleteConfirmTitle: '刪除此裝置?',
+        deleteConfirmMessage: '裝置將從您的帳戶中移除。工作階段歷史將保留,但在您重新連接守護程序之前,您將無法啟動新的工作階段。',
+        deleteFailed: '刪除裝置失敗。',
     },
 
     message: {
@@ -908,14 +965,19 @@ export const zhHant: TranslationStructure = {
         noData: '暫無使用資料',
     },
 
-    contextPanel: {
-        noSession: '開啟一個會話以瀏覽檔案',
-        searchPlaceholder: '搜尋檔案...',
-        upload: '上傳',
-        uploadToCurrentDirectory: '上傳到目前目錄',
-        dropFilesToUpload: '拖放檔案以上傳',
-        uploading: '上傳中...',
-        downloading: '下載中...',
+    imageUpload: {
+        permissionTitle: '存取照片圖庫',
+        permissionMessage: '允許存取您的照片圖庫以在訊息中附加圖片。',
+        limitTitle: '已達到圖片限制',
+        limitMessage: ({ max }: { max: number }) => `每則訊息最多可附加 ${max} 張圖片。`,
+        fileTooLargeTitle: '檔案太大',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}"超過了 ${maxMb}MB 的限制，未能新增。`,
+        uploadFailedTitle: '上傳失敗',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? '一張圖片上傳失敗，未傳送。'
+            : `${count} 張圖片上傳失敗，未傳送。`,
+        notSupportedTitle: '不支援圖片',
+        notSupportedMessage: '此代理不支援圖片附件。僅傳送了文字。',
     },
 
     feed: {

@@ -9,7 +9,7 @@ import { type SessionState, formatPathRelativeToHome, vibingMessages, formatLast
 import { Avatar } from './Avatar';
 import { Typography } from '@/constants/Typography';
 import { StatusDot } from './StatusDot';
-import { useAllMachines, useSessionProjectGitStatus, useSessionGitStatus } from '@/sync/storage';
+import { useAllMachines, useSessionGitStatus } from '@/sync/storage';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
@@ -39,9 +39,7 @@ interface ActiveSessionsGroupProps {
  * branch name, line changes, and worktree status.
  */
 function useSectionGitInfo(sessionId: string) {
-    const projectGitStatus = useSessionProjectGitStatus(sessionId);
-    const sessionGitStatus = useSessionGitStatus(sessionId);
-    const gitStatus = projectGitStatus || sessionGitStatus;
+    const gitStatus = useSessionGitStatus(sessionId);
 
     return React.useMemo(() => {
         if (!gitStatus || gitStatus.lastUpdatedAt === 0) {
@@ -87,8 +85,16 @@ const SectionHeader = React.memo(({ session, displayPath }: { session: SessionRo
         router.navigate('/new');
     }, [session.machineId, session.homeDir, repoPath, isWorktree, sessionPath, draft, router]);
 
+    const [isHovered, setIsHovered] = React.useState(false);
+
     return (
-        <View style={hasBranch ? styles.sectionHeader : styles.sectionHeaderSingleLine}>
+        <View
+            style={hasBranch ? styles.sectionHeader : styles.sectionHeaderSingleLine}
+            // @ts-ignore - Web only events
+            onMouseEnter={() => setIsHovered(true)}
+            // @ts-ignore - Web only events
+            onMouseLeave={() => setIsHovered(false)}
+        >
             {/* Avatar — vertically centered */}
             <View style={styles.sectionHeaderAvatar}>
                 <Avatar id={session.avatarId} size={24} flavor={null} />
@@ -122,11 +128,11 @@ const SectionHeader = React.memo(({ session, displayPath }: { session: SessionRo
                 )}
             </View>
 
-            {/* + button — vertically centered, large hit area */}
+            {/* + button — vertically centered, large hit area; desktop: hover-only */}
             <Pressable
                 onPress={handleAdd}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                style={styles.addButton}
+                style={[styles.addButton, { opacity: Platform.OS !== 'web' || isHovered ? 1 : 0 }]}
             >
                 <Ionicons name="add-outline" size={14} color={theme.colors.textSecondary} />
             </Pressable>
@@ -267,7 +273,11 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
 const CompactSessionRow = React.memo(({ session, selected, showBorder }: { session: SessionRowData; selected?: boolean; showBorder?: boolean }) => {
     const styles = stylesheet;
     const { theme } = useUnistyles();
-    const status = STATUS_CONFIG[session.state];
+    const baseStatus = STATUS_CONFIG[session.state];
+    // Override to solid blue when session has unread results
+    const status = session.hasUnread
+        ? { ...baseStatus, color: '#007AFF', dotColor: '#007AFF', isPulsing: false, isConnected: baseStatus.isConnected }
+        : baseStatus;
     const navigateToSession = useNavigateToSession();
     const swipeableRef = React.useRef<Swipeable | null>(null);
     const swipeEnabled = Platform.OS !== 'web';
@@ -319,6 +329,14 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
             <View style={styles.sessionContent}>
                 <View style={styles.sessionTitleRow}>
                     {(() => {
+                        if (session.hasUnread) {
+                            return (
+                                <View style={[styles.statusDotContainer, { marginRight: 8 }]}>
+                                    <StatusDot color={status.dotColor} isPulsing={false} />
+                                </View>
+                            );
+                        }
+
                         if (session.state === 'waiting' && session.hasDraft) {
                             return (
                                 <Ionicons

@@ -7,19 +7,18 @@
 ## Test Cases
 
 ### TC-01: Window Launch
-- [ ] App opens at ~1280x800 (not 800x600)
+- [ ] App opens at ~1680x1050 (not 800x600)
 - [ ] Window has minimum size constraint (~900px wide)
-- [ ] Title bar shows "Happy (dev)"
+- [ ] Title bar shows "BFELAB (dev)"
 
-### TC-02: Three-Column Layout (logged in)
-- [ ] Left: SidebarView with header ("Happy", connection status, icons)
-- [ ] Center: Current route content (e.g., "No active sessions" or Settings)
-- [ ] Right: ContextPanel showing "Context panel / Coming soon"
-- [ ] Columns have visible dividers between them
+### TC-02: Desktop Layout (logged in)
+- [ ] SidebarView shows BFELAB branding and the New Session entry without overlap
+- [ ] Current route content renders beside the sidebar
+- [ ] The sidebar divider is visible
 
 ### TC-03: Navigation Persistence
-- [ ] Click Settings icon → Center column shows Settings, sidebar stays
-- [ ] Click "+" (new session) → Center shows "Start New Session", sidebar stays
+- [ ] Click Settings row → Settings opens, sidebar stays
+- [ ] Click New Session → "Start New Session" opens, sidebar stays
 - [ ] Navigate back → Previous view restores, sidebar unchanged throughout
 
 ### TC-04: Zen Mode
@@ -28,8 +27,8 @@
 - [ ] Zen state persists after page navigation
 
 ### TC-05: System Tray
-- [ ] Happy icon visible in macOS menu bar
-- [ ] Click tray icon → Menu appears with: Show Window, sessions, New Session, Quit
+- [ ] BFELAB icon visible in macOS menu bar
+- [ ] Click tray icon → Menu appears with: Show Window, sessions, New Session, Quit BFELAB
 - [ ] Click "Quit" → App exits
 
 ### TC-06: Close Confirmation
@@ -40,7 +39,7 @@
 
 ### TC-07: Dark Mode
 - [ ] Switch to dark mode in Settings → Appearance
-- [ ] All three columns render correctly in dark mode
+- [ ] Sidebar and content render correctly in dark mode
 - [ ] No white flashes or broken colors
 
 ### TC-08: Content Width

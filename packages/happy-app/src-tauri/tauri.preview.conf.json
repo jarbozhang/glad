@@ -8,7 +8,15 @@
   "app": {
     "windows": [
       {
-        "title": "BFELAB (preview)"
+        "title": "BFELAB (preview)",
+        "width": 1680,
+        "height": 1050,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": {
+          "x": 22,
+          "y": 22
+        },
+        "hiddenTitle": true
       }
     ]
   }

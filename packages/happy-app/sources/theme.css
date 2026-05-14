@@ -2,18 +2,33 @@
    Prevents scroll-chaining from inner scrollable elements to the body. */
 html, body {
     overscroll-behavior: none;
-    font-family: "IBMPlexSans-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-#root {
-    font-family: "IBMPlexSans-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+html.happy-app-zoomed {
+    overflow: hidden;
 }
 
-.desktop-resize-handle {
-    cursor: col-resize;
+html.happy-app-zoomed body {
+    width: calc(100vw / var(--happy-app-zoom));
+    height: calc(100vh / var(--happy-app-zoom));
+    transform-origin: top left;
 }
 
-/* Theme-aware scrollbar styles using Unistyles CSS variables */
+@supports (zoom: 1) {
+    html.happy-app-zoomed body {
+        zoom: var(--happy-app-zoom);
+    }
+}
+
+@supports not (zoom: 1) {
+    html.happy-app-zoomed body {
+        transform: scale(var(--happy-app-zoom));
+    }
+}
+
+/* Theme-aware scrollbar styles using Unistyles CSS variables.
+   Use text-secondary for the thumb so it stays visible on all
+   surface colors (divider == surfaceHighest in dark theme). */
 
 /* Webkit Scrollbars (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
@@ -22,37 +37,29 @@ html, body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--colors-surface-high);
+    background: transparent;
     border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--colors-divider);
+    background: rgba(150, 150, 150, 0.4);
     border-radius: 6px;
     border: 2px solid transparent;
     background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--colors-text-secondary);
+    background: rgba(150, 150, 150, 0.4);
     background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-corner {
-    background: var(--colors-surface-high);
+    background: transparent;
 }
 
-/* Firefox */
+/* All browsers — scrollbar-color overrides webkit pseudo-elements
+   in modern Chrome/Edge, so this must also use text-secondary. */
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--colors-divider) var(--colors-surface-high);
-}
-
-/* Ensure scrollbars are visible on hover for macOS */
-::-webkit-scrollbar:horizontal {
-    height: 12px;
-}
-
-::-webkit-scrollbar:vertical {
-    width: 12px;
+    scrollbar-color: rgba(150, 150, 150, 0.4) transparent;
 }

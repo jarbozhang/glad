@@ -85,12 +85,14 @@ export const zhHans: TranslationStructure = {
         permissionRequired: '需要权限',
         activeNow: '当前活跃',
         unknown: '未知',
+        unread: '新结果',
     },
 
     time: {
         justNow: '刚刚',
         minutesAgo: ({ count }: { count: number }) => `${count} 分钟前`,
         hoursAgo: ({ count }: { count: number }) => `${count} 小时前`,
+        daysAgo: ({ count }: { count: number }) => `${count} 天前`,
     },
 
     connect: {
@@ -106,6 +108,8 @@ export const zhHans: TranslationStructure = {
         connectAccount: '连接账户',
         github: 'GitHub',
         machines: '设备',
+        showOfflineMachines: ({ count }: { count: number }) => `显示 ${count} 台离线设备`,
+        hideOfflineMachines: '隐藏离线设备',
         features: '功能',
         social: '社交',
         account: '账户',
@@ -170,6 +174,12 @@ export const zhHans: TranslationStructure = {
         showLineNumbersInToolViewsDescription: '在工具视图差异中显示行号',
         wrapLinesInDiffs: '在差异中换行',
         wrapLinesInDiffsDescription: '在差异视图中换行显示长行而不是水平滚动',
+        diffStyle: '差异视图',
+        diffStyleDescription: '以单列（unified）或并排（split）显示差异。split 视图仅在 Web 上可用。',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: '始终显示上下文大小',
         alwaysShowContextSizeDescription: '即使未接近限制时也显示上下文使用情况',
         avatarStyle: '头像风格',
@@ -181,8 +191,6 @@ export const zhHans: TranslationStructure = {
         },
         showFlavorIcons: '显示 AI 提供商图标',
         showFlavorIconsDescription: '在会话头像上显示 AI 提供商图标',
-        compactSessionView: '紧凑会话视图',
-        compactSessionViewDescription: '以更紧凑的布局显示活跃会话',
     },
 
     settingsFeatures: {
@@ -204,6 +212,13 @@ export const zhHans: TranslationStructure = {
         markdownCopyV2Subtitle: '长按打开复制模态框',
         hideInactiveSessions: '隐藏非活跃会话',
         hideInactiveSessionsSubtitle: '仅在列表中显示活跃的聊天',
+        privacy: '隐私',
+        privacyDescription: '完全禁用所有分析和遥测。不会向 PostHog 或任何其他跟踪服务发送数据。',
+        disableAnalytics: '禁用分析',
+        analyticsDisabled: '所有跟踪和遥测已禁用',
+        analyticsEnabled: '匿名使用分析已启用',
+        imageUpload: '图片上传',
+        imageUploadSubtitle: '将图片附加到消息中让 Claude 分析',
     },
 
     errors: {
@@ -276,6 +291,24 @@ export const zhHans: TranslationStructure = {
         inputPlaceholder: '输入消息...',
         inactiveArchived: '此会话处于非活动状态。',
         resumeFromTerminal: '要从终端恢复它：',
+        newChat: '新对话',
+        forkAction: '分叉会话',
+        forkSubtitle: '在相同上下文中开启新会话继续',
+        duplicateAction: '从消息处复制…',
+        duplicateSubtitle: '回到选定位置重新尝试',
+        forkFromHere: '从此处分叉',
+        duplicateSheetTitle: '选择回退点',
+        duplicateSheetSubtitle: '新会话将保留所选轮次完整内容（你的消息与智能体的回复），并丢弃其后的所有消息。',
+        duplicateSheetConfirm: '复制',
+        duplicateSheetEmpty: '此会话还没有可回退的消息。',
+        duplicateRowDisabled: '此消息不能作为回退点。',
+        forkedFromLabel: '分叉自',
+        forkedFromSubtitle: '打开分叉来源的会话',
+        forkErrorOffline: '机器离线。仅当会话所在的机器在线时才能分叉。',
+        forkErrorMissingUuid: '选定的回退点已不存在于源会话中 — 请尝试不截断地分叉。',
+        forkErrorMissingMetadata: '缺少分叉所需的会话元数据。',
+        forkErrorGeneric: '分叉会话失败。',
+        forkClaudeOnly: '目前仅支持 Claude 会话的分叉。',
     },
 
     commandPalette: {
@@ -372,7 +405,7 @@ export const zhHans: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: '准备开始编程？',
-            connectCli: '绑定 Happy CLI',
+            connectCli: '连接 Happy CLI',
             installCli: '安装 Happy CLI',
             runIt: '运行它',
             runCliAuth: '运行 happy auth login 或 happy',
@@ -458,6 +491,11 @@ export const zhHans: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: '显示已归档',
         hideArchived: '隐藏已归档',
+        newSession: '新建会话',
+    },
+
+    zen: {
+        toggle: '禅模式',
     },
 
     desktopBrand: {
@@ -540,6 +578,7 @@ export const zhHans: TranslationStructure = {
     },
 
     files: {
+        changes: '更改',
         searchPlaceholder: '搜索文件...',
         detachedHead: '游离 HEAD',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `${staged} 已暂存 • ${unstaged} 未暂存`,
@@ -561,7 +600,19 @@ export const zhHans: TranslationStructure = {
         file: '文件',
         fileEmpty: '文件为空',
         noChanges: '没有要显示的更改',
+        noChangesTitle: '没有更改',
+        noChangesSubtitle: '工作区是干净的',
         deleted: '已删除',
+        changedFiles: ({ count }: { count: number }) => `${count} 个已更改的文件`,
+        allFiles: '所有文件',
+        editFile: '编辑',
+        saveFile: '保存',
+        failedToRead: '读取文件失败',
+        failedToSave: '保存文件失败',
+        fileConflict: '文件冲突',
+        fileConflictDescription: '编辑期间文件已在设备上被修改。重新加载以查看最新版本。',
+        reload: '重新加载',
+        overwrite: '覆盖',
     },
 
     settingsVoice: {
@@ -772,6 +823,12 @@ export const zhHans: TranslationStructure = {
         lastDetected: '最近检测',
         untitledSession: '无标题会话',
         back: '返回',
+        dangerZone: '危险区域',
+        delete: '删除设备',
+        deleteFooter: '从您的账户中移除此设备。会话历史将保留，但您无法再在此设备上启动新会话。',
+        deleteConfirmTitle: '删除此设备？',
+        deleteConfirmMessage: '设备将从您的账户中移除。会话历史将保留，但在您重新连接守护进程之前，您将无法启动新会话。',
+        deleteFailed: '删除设备失败。',
     },
 
     message: {
@@ -909,14 +966,19 @@ export const zhHans: TranslationStructure = {
         noData: '暂无使用数据',
     },
 
-    contextPanel: {
-        noSession: '打开一个会话以浏览文件',
-        searchPlaceholder: '搜索文件...',
-        upload: '上传',
-        uploadToCurrentDirectory: '上传到当前目录',
-        dropFilesToUpload: '拖放文件以上传',
-        uploading: '上传中...',
-        downloading: '下载中...',
+    imageUpload: {
+        permissionTitle: '访问照片库',
+        permissionMessage: '允许访问您的照片库以在消息中附加图片。',
+        limitTitle: '已达到图片限制',
+        limitMessage: ({ max }: { max: number }) => `每条消息最多可附加 ${max} 张图片。`,
+        fileTooLargeTitle: '文件过大',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}"超过了 ${maxMb}MB 的限制，未能添加。`,
+        uploadFailedTitle: '上传失败',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? '一张图片上传失败，未发送。'
+            : `${count} 张图片上传失败，未发送。`,
+        notSupportedTitle: '不支持图片',
+        notSupportedMessage: '该代理不支持图片附件。仅发送了文本。',
     },
 
     feed: {
