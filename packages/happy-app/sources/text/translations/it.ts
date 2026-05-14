@@ -82,12 +82,14 @@ export const it: TranslationStructure = {
         permissionRequired: 'permesso richiesto',
         activeNow: 'Attivo ora',
         unknown: 'sconosciuto',
+        unread: 'nuovi risultati',
     },
 
     time: {
         justNow: 'proprio ora',
         minutesAgo: ({ count }: { count: number }) => `${count} ${count === 1 ? 'minuto' : 'minuti'} fa`,
         hoursAgo: ({ count }: { count: number }) => `${count} ${count === 1 ? 'ora' : 'ore'} fa`,
+        daysAgo: ({ count }: { count: number }) => `${count} ${count === 1 ? 'giorno' : 'giorni'} fa`,
     },
 
     connect: {
@@ -103,6 +105,8 @@ export const it: TranslationStructure = {
         connectAccount: 'Collega account',
         github: 'GitHub',
         machines: 'Macchine',
+        showOfflineMachines: ({ count }: { count: number }) => count === 1 ? 'Mostra 1 macchina offline' : `Mostra ${count} macchine offline`,
+        hideOfflineMachines: 'Nascondi macchine offline',
         features: 'Funzionalità',
         social: 'Social',
         account: 'Account',
@@ -167,6 +171,12 @@ export const it: TranslationStructure = {
         showLineNumbersInToolViewsDescription: 'Mostra i numeri di riga nei diff delle viste strumenti',
         wrapLinesInDiffs: 'A capo nelle differenze',
         wrapLinesInDiffsDescription: 'A capo delle righe lunghe invece dello scorrimento orizzontale nelle viste diff',
+        diffStyle: 'Vista diff',
+        diffStyleDescription: 'Mostra le differenze in una sola colonna (unified) o affiancate (split). La vista split è disponibile solo sul web.',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: 'Mostra sempre dimensione contesto',
         alwaysShowContextSizeDescription: 'Mostra l\'uso del contesto anche quando non è vicino al limite',
         avatarStyle: 'Stile avatar',
@@ -178,8 +188,6 @@ export const it: TranslationStructure = {
         },
         showFlavorIcons: 'Mostra icone provider IA',
         showFlavorIconsDescription: 'Mostra le icone del provider IA sugli avatar di sessione',
-        compactSessionView: 'Vista sessioni compatta',
-        compactSessionViewDescription: 'Mostra le sessioni attive in un layout più compatto',
     },
 
     settingsFeatures: {
@@ -201,6 +209,13 @@ export const it: TranslationStructure = {
         markdownCopyV2Subtitle: 'Pressione lunga apre la finestra di copia',
         hideInactiveSessions: 'Nascondi sessioni inattive',
         hideInactiveSessionsSubtitle: 'Mostra solo le chat attive nella tua lista',
+        privacy: 'Privacy',
+        privacyDescription: 'Disabilita completamente tutte le analisi e la telemetria. Nessun dato verrà inviato a PostHog o ad altri servizi di tracciamento.',
+        disableAnalytics: 'Disabilita analisi',
+        analyticsDisabled: 'Tutto il tracciamento e la telemetria disabilitati',
+        analyticsEnabled: 'Analisi anonime di utilizzo attive',
+        imageUpload: 'Caricamento immagini',
+        imageUploadSubtitle: 'Allega immagini ai messaggi per farle analizzare da Claude',
     },
 
     errors: {
@@ -273,6 +288,24 @@ export const it: TranslationStructure = {
         inputPlaceholder: 'Scrivi un messaggio ...',
         inactiveArchived: 'Questa sessione è inattiva.',
         resumeFromTerminal: 'Per riprenderla dal terminale:',
+        newChat: 'Nuova chat',
+        forkAction: 'Biforca sessione',
+        forkSubtitle: 'Continua in una nuova sessione con lo stesso contesto',
+        duplicateAction: 'Duplica da un messaggio…',
+        duplicateSubtitle: 'Torna a un punto scelto e riprova',
+        forkFromHere: 'Biforca da qui',
+        duplicateSheetTitle: 'Scegli un punto di ritorno',
+        duplicateSheetSubtitle: 'La nuova sessione manterrà il turno scelto completo (il tuo messaggio e la risposta dell\'agente) e scarterà i messaggi successivi.',
+        duplicateSheetConfirm: 'Duplica',
+        duplicateSheetEmpty: 'Nessun messaggio idoneo per il ritorno in questa sessione.',
+        duplicateRowDisabled: 'Questo messaggio non può essere usato come punto di ritorno.',
+        forkedFromLabel: 'Biforcato da',
+        forkedFromSubtitle: 'Apri la sessione da cui è stata creata la biforcazione',
+        forkErrorOffline: 'La macchina è offline. La biforcazione è disponibile solo mentre la macchina della sessione è online.',
+        forkErrorMissingUuid: 'Il punto di ritorno scelto non esiste più nella sessione di origine — prova a biforcare senza troncare.',
+        forkErrorMissingMetadata: 'Mancano i metadati della sessione necessari per biforcare.',
+        forkErrorGeneric: 'Impossibile biforcare la sessione.',
+        forkClaudeOnly: 'La biforcazione è attualmente supportata solo per le sessioni Claude.',
     },
 
     commandPalette: {
@@ -369,7 +402,7 @@ export const it: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: 'Pronto a programmare?',
-            connectCli: 'Collega la CLI Happy',
+            connectCli: 'Connetti la CLI Happy',
             installCli: 'Installa la CLI Happy',
             runIt: 'Avviala',
             runCliAuth: 'Esegui happy auth login o happy',
@@ -455,6 +488,11 @@ export const it: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: 'Mostra archiviate',
         hideArchived: 'Nascondi archiviate',
+        newSession: 'Nuova sessione',
+    },
+
+    zen: {
+        toggle: 'Modalità zen',
     },
 
     toolView: {
@@ -529,6 +567,7 @@ export const it: TranslationStructure = {
     },
 
     files: {
+        changes: 'Modifiche',
         searchPlaceholder: 'Cerca file...',
         detachedHead: 'HEAD scollegato',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `${staged} in stage • ${unstaged} non in stage`,
@@ -550,7 +589,19 @@ export const it: TranslationStructure = {
         file: 'File',
         fileEmpty: 'File vuoto',
         noChanges: 'Nessuna modifica da mostrare',
+        noChangesTitle: 'Nessuna modifica',
+        noChangesSubtitle: 'L\'albero di lavoro è pulito',
         deleted: 'Eliminato',
+        changedFiles: ({ count }: { count: number }) => `${count} ${count === 1 ? 'file modificato' : 'file modificati'}`,
+        allFiles: 'Tutti i file',
+        editFile: 'Modifica',
+        saveFile: 'Salva',
+        failedToRead: 'Impossibile leggere il file',
+        failedToSave: 'Impossibile salvare il file',
+        fileConflict: 'Conflitto file',
+        fileConflictDescription: 'Questo file è stato modificato sul dispositivo mentre lo stavi modificando. Ricarica per vedere l\'ultima versione.',
+        reload: 'Ricarica',
+        overwrite: 'Sovrascrivi',
     },
 
     settingsVoice: {
@@ -761,6 +812,12 @@ export const it: TranslationStructure = {
         lastDetected: 'Ultimo rilevamento',
         untitledSession: 'Sessione senza titolo',
         back: 'Indietro',
+        dangerZone: 'Zona di pericolo',
+        delete: 'Elimina macchina',
+        deleteFooter: 'Rimuove questa macchina dal tuo account. La cronologia delle sessioni viene mantenuta, ma non potrai più avviare nuove sessioni su di essa.',
+        deleteConfirmTitle: 'Eliminare questa macchina?',
+        deleteConfirmMessage: 'La macchina verrà rimossa dal tuo account. La cronologia delle sessioni viene mantenuta, ma non potrai avviare nuove sessioni finché non riconnetti il daemon.',
+        deleteFailed: 'Impossibile eliminare la macchina.',
     },
 
     message: {
@@ -899,14 +956,19 @@ export const it: TranslationStructure = {
         noData: 'Nessun dato di utilizzo disponibile',
     },
 
-    contextPanel: {
-        noSession: 'Apri una sessione per sfogliare i file',
-        searchPlaceholder: 'Cerca file...',
-        upload: 'Carica',
-        uploadToCurrentDirectory: 'Carica nella directory corrente',
-        dropFilesToUpload: 'Rilascia i file per caricarli',
-        uploading: 'Caricamento...',
-        downloading: 'Scaricamento...',
+    imageUpload: {
+        permissionTitle: 'Accesso alla libreria foto',
+        permissionMessage: "Consenti l'accesso alla tua libreria foto per allegare immagini ai messaggi.",
+        limitTitle: 'Limite immagini raggiunto',
+        limitMessage: ({ max }: { max: number }) => `Puoi allegare fino a ${max} immagini per messaggio.`,
+        fileTooLargeTitle: 'File troppo grande',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}" supera il limite di ${maxMb}MB e non è stato aggiunto.`,
+        uploadFailedTitle: 'Caricamento non riuscito',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? 'Un\'immagine non è stata caricata e non è stata inviata.'
+            : `Non è stato possibile caricare ${count} immagini e non sono state inviate.`,
+        notSupportedTitle: 'Immagini non supportate',
+        notSupportedMessage: 'Questo agente non supporta gli allegati immagine. È stato inviato solo il testo.',
     },
 
     feed: {

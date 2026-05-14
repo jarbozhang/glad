@@ -39,13 +39,13 @@ export function decodeBase64(base64: string, encoding: 'base64' | 'base64url' = 
 export function encodeBase64(buffer: Uint8Array, encoding: 'base64' | 'base64url' = 'base64'): string {
     const binaryString = bytesToBinaryString(buffer);
     const base64 = btoa(binaryString);
-    
+
     if (encoding === 'base64url') {
         return base64
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=/g, '');
     }
-    
+
     return base64;
 }

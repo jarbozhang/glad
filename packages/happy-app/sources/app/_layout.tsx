@@ -14,7 +14,7 @@ import { initialWindowMetrics, SafeAreaProvider, useSafeAreaInsets } from 'react
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SidebarNavigator } from '@/components/SidebarNavigator';
 import sodium from '@/encryption/libsodium.lib';
-import { View, Platform } from 'react-native';
+import { View, Platform, AppState } from 'react-native';
 import { ModalProvider } from '@/modal';
 import { PostHogProvider } from 'posthog-react-native';
 import { tracking } from '@/track/tracking';
@@ -33,25 +33,36 @@ import { isTauri } from '@/utils/platform';
 import { getSessionRouteFromNotificationResponse } from '@/utils/notificationRouting';
 import { navigateToSession } from '@/hooks/useNavigateToSession';
 import { applyVoiceUpsellOverride } from '@/realtime/voiceExperiment';
+import { useTauriZoom } from '@/hooks/useTauriZoom';
+import { useTauriDrag } from '@/hooks/useTauriDrag';
 
-// Configure notification handler for foreground notifications
-// Skip in Tauri — expo-notifications native module is not available in webview
+// Configure notification handler for foreground notifications.
+// Skip in Tauri because expo-notifications native module is not available in the webview.
 if (!isTauri()) {
     Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-            shouldShowBanner: true,
-            shouldShowList: true,
-        }),
+        handleNotification: async () => {
+            const isForeground = AppState.currentState === 'active';
+            return {
+                shouldShowAlert: !isForeground,
+                shouldPlaySound: !isForeground,
+                shouldSetBadge: true,
+                shouldShowBanner: !isForeground,
+                shouldShowList: true,
+            };
+        },
     });
 
-    // Setup Android notification channel (required for Android 8.0+)
+    // Setup Android notification channels (required for Android 8.0+)
     if (Platform.OS === 'android') {
         Notifications.setNotificationChannelAsync('default', {
             name: 'Default',
             importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+        Notifications.setNotificationChannelAsync('messages', {
+            name: 'Messages',
+            importance: Notifications.AndroidImportance.HIGH,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#FF231F7C',
         });
@@ -166,6 +177,8 @@ function getDevWebQueryCredentials(): AuthCredentials | null {
 }
 
 export default function RootLayout() {
+    useTauriZoom();
+    useTauriDrag();
     const router = useRouter();
     const { theme } = useUnistyles();
     const navigationTheme = React.useMemo(() => {
@@ -349,7 +362,7 @@ export default function RootLayout() {
 
     let providers = (
         <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <KeyboardProvider>
+            <KeyboardProvider preload={false}>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                     <AuthProvider initialCredentials={initState.credentials}>
                         <ThemeProvider value={navigationTheme}>

@@ -1,13 +1,14 @@
 import { logger } from '@/ui/logger'
 import { EventEmitter } from 'node:events'
 import { io, Socket } from 'socket.io-client'
-import { AgentState, ClientToServerEvents, Metadata, ServerToClientEvents, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
-import { decodeBase64, decrypt, encodeBase64, encrypt } from './encryption';
+import { AgentState, ClientToServerEvents, FileEventMessage, FileEventMessageSchema, Metadata, ServerToClientEvents, Session, Update, UserMessage, UserMessageSchema, Usage } from './types'
+import { decodeBase64, decryptBlob, decrypt, encodeBase64, encrypt } from './encryption';
 import { backoff, delay } from '@/utils/time';
 import { configuration } from '@/configuration';
 import { RawJSONLines } from '@/claude/types';
 import { randomUUID } from 'node:crypto';
 import { AsyncLock } from '@/utils/lock';
+import { deriveKey } from '@/utils/deriveKey';
 import { RpcHandlerManager } from './rpc/RpcHandlerManager';
 import { registerCommonHandlers } from '../modules/common/registerCommonHandlers';
 import { calculateCost } from '@/utils/pricing';
@@ -82,12 +83,24 @@ export class ApiSessionClient extends EventEmitter {
     private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
     private pendingMessages: UserMessage[] = [];
     private pendingMessageCallback: ((message: UserMessage) => void) | null = null;
+    private pendingFileEvents: FileEventMessage[] = [];
+    private pendingFileEventCallback: ((data: FileEventMessage) => void) | null = null;
+    private blobKey: Uint8Array | null = null;
+    /**
+     * In-flight attachment download promises that belong to the *current*
+     * (not-yet-drained) batch. Each promise resolves to the decoded blob (or
+     * null on failure), so per-message ownership is intrinsic — there is no
+     * shared push-array between batches that a late download could leak into.
+     */
+    private pendingDownloads: Promise<{ data: Uint8Array; mimeType: string; name: string } | null>[] = [];
     readonly rpcHandlerManager: RpcHandlerManager;
     private agentStateLock = new AsyncLock();
     private metadataLock = new AsyncLock();
     private encryptionKey: Uint8Array;
     private encryptionVariant: 'legacy' | 'dataKey';
     private reconnectInterval: NodeJS.Timeout | null = null;
+    private ignoreArchiveSignal = false;
+    private skipInitialMessages = false;
     private claudeSessionProtocolState: ClaudeSessionProtocolState = {
         currentTurnId: null,
         uuidToProviderSubagent: new Map<string, string>(),
@@ -134,7 +147,8 @@ export class ApiSessionClient extends EventEmitter {
             auth: {
                 token: this.token,
                 clientType: 'session-scoped' as const,
-                sessionId: this.sessionId
+                sessionId: this.sessionId,
+                happyClient: `cli-coding-session/${configuration.currentCliVersion}`
             },
             path: '/v1/updates',
             reconnection: false,
@@ -204,8 +218,13 @@ export class ApiSessionClient extends EventEmitter {
                         // Check if session was archived from web/mobile
                         const meta = this.metadata as any;
                         if (meta?.lifecycleState === 'archiveRequested' || meta?.lifecycleState === 'archived') {
-                            logger.debug(`[SOCKET] Session archived (${meta.lifecycleState}), exiting...`);
-                            this.emit('archived');
+                            if (this.ignoreArchiveSignal) {
+                                logger.debug(`[SOCKET] Session archived (${meta.lifecycleState}) but suppressed for reconnect`);
+                                this.ignoreArchiveSignal = false;
+                            } else {
+                                logger.debug(`[SOCKET] Session archived (${meta.lifecycleState}), exiting...`);
+                                this.emit('archived');
+                            }
                         }
                     }
                     if (data.body.agentState && data.body.agentState.version > this.agentStateVersion) {
@@ -243,10 +262,102 @@ export class ApiSessionClient extends EventEmitter {
         }
     }
 
+    onFileEvent(callback: (data: FileEventMessage) => void) {
+        this.pendingFileEventCallback = callback;
+        while (this.pendingFileEvents.length > 0) {
+            callback(this.pendingFileEvents.shift()!);
+        }
+    }
+
+    /**
+     * Derive (and cache) the blob decryption key for this session.
+     * Legacy sessions use deriveKey(masterSecret, 'Happy Blobs', ['master']).
+     * DataKey sessions use deriveKey(dataKey, 'Happy Blobs', ['session']).
+     */
+    async getBlobKey(): Promise<Uint8Array> {
+        if (!this.blobKey) {
+            const path = this.encryptionVariant === 'dataKey' ? ['session'] : ['master'];
+            this.blobKey = await deriveKey(this.encryptionKey, 'Happy Blobs', path);
+        }
+        return this.blobKey;
+    }
+
+    /**
+     * Download an encrypted attachment blob via the request-download flow:
+     * POST /request-download → { downloadUrl } → GET downloadUrl. Local mode
+     * downloadUrl points back at our server (Bearer required); S3 mode is a
+     * presigned URL that does not accept extra headers.
+     */
+    async downloadAttachment(ref: string): Promise<Uint8Array> {
+        const requestUrl = `${configuration.serverUrl}/v1/sessions/${this.sessionId}/attachments/request-download`;
+        const requestRes = await axios.post(
+            requestUrl,
+            { ref },
+            {
+                headers: { 'Authorization': `Bearer ${this.token}`, 'Content-Type': 'application/json' },
+                timeout: 30000,
+            },
+        );
+        const downloadUrl = requestRes.data?.downloadUrl;
+        if (typeof downloadUrl !== 'string') {
+            throw new Error('request-download returned no downloadUrl');
+        }
+
+        const isServerUrl = downloadUrl.startsWith(configuration.serverUrl);
+        const headers: Record<string, string> = {};
+        if (isServerUrl) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+        const response = await axios.get(downloadUrl, {
+            headers,
+            responseType: 'arraybuffer',
+            timeout: 60000,
+            maxRedirects: 5,
+            maxContentLength: 10 * 1024 * 1024,
+        });
+        return new Uint8Array(response.data);
+    }
+
+    /**
+     * Download and decrypt an attachment blob.
+     * Returns the decrypted binary data or null if decryption fails.
+     */
+    async downloadAndDecryptAttachment(ref: string): Promise<Uint8Array | null> {
+        const encrypted = await this.downloadAttachment(ref);
+        const key = await this.getBlobKey();
+        const decrypted = decryptBlob(encrypted, key);
+        return decrypted;
+    }
+
+    /**
+     * Track an attachment download whose promise resolves to the decoded blob
+     * (or null on failure). The download stays in the current batch until the
+     * next drainAttachmentsForUserMessage call swaps the bucket out — file
+     * events that arrive after the swap go into a fresh bucket bound to the
+     * next user-text message.
+     */
+    trackAttachmentDownload(promise: Promise<{ data: Uint8Array; mimeType: string; name: string } | null>): void {
+        this.pendingDownloads.push(promise);
+    }
+
+    /**
+     * Atomically claim every download started before this call, wait for them
+     * to resolve, and return the successful ones. The swap-then-await order
+     * guarantees that a late-arriving file event cannot leak into this batch.
+     */
+    async drainAttachmentsForUserMessage(): Promise<Array<{ data: Uint8Array; mimeType: string; name: string }>> {
+        const downloads = this.pendingDownloads;
+        this.pendingDownloads = [];
+        if (downloads.length === 0) return [];
+        const results = await Promise.all(downloads);
+        return results.filter((x): x is { data: Uint8Array; mimeType: string; name: string } => x !== null);
+    }
+
     private authHeaders() {
         return {
             'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Happy-Client': `cli-coding-session/${configuration.currentCliVersion}`
         };
     }
 
@@ -260,10 +371,30 @@ export class ApiSessionClient extends EventEmitter {
             }
             return;
         }
+
+        // Check for file events (image attachments from app)
+        const fileResult = FileEventMessageSchema.safeParse(message);
+        if (fileResult.success) {
+            logger.debug(`[API] Received file event: ${fileResult.data.content.data.ev.name} (ref: ${fileResult.data.content.data.ev.ref})`);
+            if (this.pendingFileEventCallback) {
+                this.pendingFileEventCallback(fileResult.data);
+            } else {
+                this.pendingFileEvents.push(fileResult.data);
+            }
+            return;
+        }
+
         this.emit('message', message);
     }
 
     private async fetchMessages() {
+        // On reconnect, skip processing existing messages — just advance lastSeq
+        const skipRouting = this.skipInitialMessages;
+        if (skipRouting) {
+            this.skipInitialMessages = false;
+            logger.debug('[API] Reconnect mode: skipping existing messages, advancing lastSeq');
+        }
+
         let afterSeq = this.lastSeq;
         while (true) {
             const response = await axios.get<V3GetSessionMessagesResponse>(
@@ -285,6 +416,8 @@ export class ApiSessionClient extends EventEmitter {
                 if (message.seq > maxSeq) {
                     maxSeq = message.seq;
                 }
+
+                if (skipRouting) continue;
 
                 if (message.content?.t !== 'encrypted') {
                     continue;
@@ -546,6 +679,14 @@ export class ApiSessionClient extends EventEmitter {
      * Update session metadata
      * @param handler - Handler function that returns the updated metadata
      */
+    suppressNextArchiveSignal() {
+        this.ignoreArchiveSignal = true;
+    }
+
+    skipExistingMessages() {
+        this.skipInitialMessages = true;
+    }
+
     updateMetadata(handler: (metadata: Metadata) => Metadata) {
         this.metadataLock.inLock(async () => {
             await backoff(async () => {
@@ -630,22 +771,23 @@ export class ApiSessionClient extends EventEmitter {
     private startSmartReconnect() {
         if (this.reconnectInterval) return;
 
-        if (shouldReconnect()) {
-            logger.debug('[API] Network up + lid open — reconnecting in 1s');
-            setTimeout(() => { if (!this.socket.connected) this.socket.connect() }, 1000);
-            return;
-        }
-
-        logger.debug('[API] Conditions not met for reconnect — polling every 5s');
         this.reconnectInterval = setInterval(() => {
+            if (this.socket.connected) {
+                clearInterval(this.reconnectInterval!);
+                this.reconnectInterval = null;
+                return;
+            }
             if (!shouldReconnect()) {
                 logger.debug('[API] Still not ready to reconnect');
                 return;
             }
-            logger.debug('[API] Conditions met — reconnecting');
-            clearInterval(this.reconnectInterval!);
-            this.reconnectInterval = null;
+            logger.debug('[API] Attempting reconnect');
             this.socket.connect();
-        }, 5000);
+        }, 3000);
+
+        if (shouldReconnect()) {
+            logger.debug('[API] Network up + lid open — reconnecting in 1s');
+            setTimeout(() => { if (!this.socket.connected) this.socket.connect() }, 1000);
+        }
     }
 }

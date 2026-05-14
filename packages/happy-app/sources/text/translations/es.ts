@@ -83,12 +83,14 @@ export const es: TranslationStructure = {
         permissionRequired: 'permiso requerido',
         activeNow: 'Activo ahora',
         unknown: 'desconocido',
+        unread: 'nuevos resultados',
     },
 
     time: {
         justNow: 'ahora mismo',
         minutesAgo: ({ count }: { count: number }) => `hace ${count} minuto${count !== 1 ? 's' : ''}`,
         hoursAgo: ({ count }: { count: number }) => `hace ${count} hora${count !== 1 ? 's' : ''}`,
+        daysAgo: ({ count }: { count: number }) => `hace ${count} día${count !== 1 ? 's' : ''}`,
     },
 
     connect: {
@@ -104,6 +106,8 @@ export const es: TranslationStructure = {
         connectAccount: 'Conectar cuenta',
         github: 'GitHub',
         machines: 'Máquinas',
+        showOfflineMachines: ({ count }: { count: number }) => count === 1 ? 'Mostrar 1 máquina sin conexión' : `Mostrar ${count} máquinas sin conexión`,
+        hideOfflineMachines: 'Ocultar máquinas sin conexión',
         features: 'Características',
         social: 'Social',
         account: 'Cuenta',
@@ -169,6 +173,12 @@ export const es: TranslationStructure = {
         showLineNumbersInToolViewsDescription: 'Mostrar números de línea en diferencias de vistas de herramientas',
         wrapLinesInDiffs: 'Ajustar líneas en diferencias',
         wrapLinesInDiffsDescription: 'Ajustar líneas largas en lugar de desplazamiento horizontal en vistas de diferencias',
+        diffStyle: 'Vista de diferencias',
+        diffStyleDescription: 'Mostrar diferencias en una sola columna (unified) o lado a lado (split). La vista split solo funciona en web.',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: 'Mostrar siempre tamaño del contexto',
         alwaysShowContextSizeDescription: 'Mostrar uso del contexto incluso cuando no esté cerca del límite',
         avatarStyle: 'Estilo de avatar',
@@ -180,8 +190,6 @@ export const es: TranslationStructure = {
         },
         showFlavorIcons: 'Mostrar íconos de proveedor de IA',
         showFlavorIconsDescription: 'Mostrar íconos del proveedor de IA en los avatares de sesión',
-        compactSessionView: 'Vista compacta de sesiones',
-        compactSessionViewDescription: 'Mostrar sesiones activas en un diseño más compacto',
     },
 
     settingsFeatures: {
@@ -203,6 +211,13 @@ export const es: TranslationStructure = {
         markdownCopyV2Subtitle: 'Pulsación larga abre modal de copiado',
         hideInactiveSessions: 'Ocultar sesiones inactivas',
         hideInactiveSessionsSubtitle: 'Muestra solo los chats activos en tu lista',
+        privacy: 'Privacidad',
+        privacyDescription: 'Desactiva completamente toda la analítica y telemetría. No se enviarán datos a PostHog ni a ningún otro servicio de seguimiento.',
+        disableAnalytics: 'Desactivar analítica',
+        analyticsDisabled: 'Todo el seguimiento y telemetría desactivados',
+        analyticsEnabled: 'Analítica anónima de uso activa',
+        imageUpload: 'Subida de imágenes',
+        imageUploadSubtitle: 'Adjunta imágenes a los mensajes para que Claude las analice',
     },
 
     errors: {
@@ -275,6 +290,24 @@ export const es: TranslationStructure = {
         inputPlaceholder: 'Escriba un mensaje ...',
         inactiveArchived: 'Esta sesión está inactiva.',
         resumeFromTerminal: 'Para reanudarla desde la terminal:',
+        newChat: 'Chat nuevo',
+        forkAction: 'Bifurcar sesión',
+        forkSubtitle: 'Continuar en una nueva sesión con el mismo contexto',
+        duplicateAction: 'Duplicar desde un mensaje…',
+        duplicateSubtitle: 'Volver a un punto elegido e intentarlo de nuevo',
+        forkFromHere: 'Bifurcar desde aquí',
+        duplicateSheetTitle: 'Elige un punto de retroceso',
+        duplicateSheetSubtitle: 'La nueva sesión conservará el turno elegido completo (tu mensaje y la respuesta del agente) y descartará los siguientes mensajes.',
+        duplicateSheetConfirm: 'Duplicar',
+        duplicateSheetEmpty: 'Aún no hay mensajes elegibles para retroceder en esta sesión.',
+        duplicateRowDisabled: 'Este mensaje no se puede usar como punto de retroceso.',
+        forkedFromLabel: 'Bifurcado de',
+        forkedFromSubtitle: 'Abrir la sesión de la que se bifurcó',
+        forkErrorOffline: 'Esta máquina está fuera de línea. Bifurcar solo está disponible mientras la máquina de la sesión esté en línea.',
+        forkErrorMissingUuid: 'El punto de retroceso elegido ya no existe en la sesión origen — intenta bifurcar sin truncar.',
+        forkErrorMissingMetadata: 'Faltan metadatos de la sesión necesarios para bifurcar.',
+        forkErrorGeneric: 'No se pudo bifurcar la sesión.',
+        forkClaudeOnly: 'La bifurcación actualmente solo se admite para sesiones de Claude.',
     },
 
     commandPalette: {
@@ -371,7 +404,7 @@ export const es: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: '¿Listo para programar?',
-            connectCli: 'Conecta la CLI de Happy',
+            connectCli: 'Conecta el Happy CLI',
             installCli: 'Instale el Happy CLI',
             runIt: 'Ejecútelo',
             runCliAuth: 'Ejecute happy auth login o happy',
@@ -457,6 +490,11 @@ export const es: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: 'Mostrar archivadas',
         hideArchived: 'Ocultar archivadas',
+        newSession: 'Nueva sesión',
+    },
+
+    zen: {
+        toggle: 'Modo zen',
     },
 
     toolView: {
@@ -531,6 +569,7 @@ export const es: TranslationStructure = {
     },
 
     files: {
+        changes: 'Cambios',
         searchPlaceholder: 'Buscar archivos...',
         detachedHead: 'HEAD separado',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `${staged} preparados • ${unstaged} sin preparar`,
@@ -552,7 +591,19 @@ export const es: TranslationStructure = {
         file: 'Archivo',
         fileEmpty: 'El archivo está vacío',
         noChanges: 'No hay cambios que mostrar',
+        noChangesTitle: 'Sin cambios',
+        noChangesSubtitle: 'El árbol de trabajo está limpio',
         deleted: 'Eliminado',
+        changedFiles: ({ count }: { count: number }) => `${count} ${count === 1 ? 'archivo modificado' : 'archivos modificados'}`,
+        allFiles: 'Todos los archivos',
+        editFile: 'Editar',
+        saveFile: 'Guardar',
+        failedToRead: 'Error al leer el archivo',
+        failedToSave: 'Error al guardar el archivo',
+        fileConflict: 'Conflicto de archivo',
+        fileConflictDescription: 'Este archivo fue modificado en el dispositivo mientras lo editabas. Recarga para ver la última versión.',
+        reload: 'Recargar',
+        overwrite: 'Sobrescribir',
     },
 
     settingsVoice: {
@@ -763,6 +814,12 @@ export const es: TranslationStructure = {
         lastDetected: 'Última detección',
         untitledSession: 'Sesión sin título',
         back: 'Atrás',
+        dangerZone: 'Zona de peligro',
+        delete: 'Eliminar máquina',
+        deleteFooter: 'Elimina esta máquina de tu cuenta. El historial de sesiones se conservará, pero no podrás iniciar nuevas sesiones en esta máquina.',
+        deleteConfirmTitle: '¿Eliminar esta máquina?',
+        deleteConfirmMessage: 'La máquina se eliminará de tu cuenta. El historial de sesiones se conservará, pero no podrás iniciar nuevas sesiones hasta que vuelvas a conectar el daemon.',
+        deleteFailed: 'No se pudo eliminar la máquina.',
     },
 
     message: {
@@ -901,14 +958,19 @@ export const es: TranslationStructure = {
         noData: 'No hay datos de uso disponibles',
     },
 
-    contextPanel: {
-        noSession: 'Abre una sesión para explorar archivos',
-        searchPlaceholder: 'Buscar archivos...',
-        upload: 'Subir',
-        uploadToCurrentDirectory: 'Subir al directorio actual',
-        dropFilesToUpload: 'Suelta archivos para subirlos',
-        uploading: 'Subiendo...',
-        downloading: 'Descargando...',
+    imageUpload: {
+        permissionTitle: 'Acceso a la biblioteca de fotos',
+        permissionMessage: 'Permite el acceso a tu biblioteca de fotos para adjuntar imágenes a los mensajes.',
+        limitTitle: 'Límite de imágenes alcanzado',
+        limitMessage: ({ max }: { max: number }) => `Puedes adjuntar hasta ${max} imágenes por mensaje.`,
+        fileTooLargeTitle: 'Archivo demasiado grande',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}" supera el límite de ${maxMb}MB y no se añadió.`,
+        uploadFailedTitle: 'Error al subir',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? 'No se pudo subir una imagen y no se envió.'
+            : `No se pudieron subir ${count} imágenes y no se enviaron.`,
+        notSupportedTitle: 'Imágenes no compatibles',
+        notSupportedMessage: 'Este agente no admite imágenes adjuntas. Solo se envió el texto.',
     },
 
     feed: {

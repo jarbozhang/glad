@@ -12,12 +12,14 @@ export interface SessionScopedConnection {
     socket: Socket;
     userId: string;
     sessionId: string;
+    happyClient?: string;
 }
 
 export interface UserScopedConnection {
     connectionType: 'user-scoped';
     socket: Socket;
     userId: string;
+    happyClient?: string;
 }
 
 export interface MachineScopedConnection {
@@ -25,6 +27,7 @@ export interface MachineScopedConnection {
     socket: Socket;
     userId: string;
     machineId: string;
+    happyClient?: string;
 }
 
 export type ClientConnection = SessionScopedConnection | UserScopedConnection | MachineScopedConnection;
@@ -108,6 +111,9 @@ export type UpdateEvent = {
     };
     activeAt?: number;
 } | {
+    type: 'delete-machine';
+    machineId: string;
+} | {
     type: 'new-artifact';
     artifactId: string;
     seq: number;
@@ -179,6 +185,13 @@ export type EphemeralEvent = {
     type: 'machine-status';
     machineId: string;
     online: boolean;
+    timestamp: number;
+} | {
+    type: 'session-event';
+    sessionId: string;
+    kind: 'done' | 'permission' | 'question';
+    title: string;
+    body: string;
     timestamp: number;
 };
 
@@ -262,6 +275,25 @@ class EventRouter {
             payload: params.payload,
             recipientFilter: params.recipientFilter || { type: 'all-user-authenticated-connections' },
             skipSenderConnection: params.skipSenderConnection
+        });
+    }
+
+    // === PRESENCE QUERIES ===
+
+    /**
+     * Returns true if the user has any non-machine socket that hasn't
+     * reported `app-state: background`.  Old clients that never send
+     * `app-state` are treated as active (connected = present).
+     *
+     * Uses fetchSockets() which works cross-replica via Redis streams adapter.
+     */
+    async hasActiveNonMachineSocket(userId: string): Promise<boolean> {
+        const sockets = await this.io.in(`user:${userId}`).fetchSockets();
+        return sockets.some(s => {
+            if (s.data.clientType === 'machine-scoped') return false;
+            // No app-state yet → old client or just connected; assume active
+            const appState = s.data.appState as string | undefined;
+            return appState !== 'background';
         });
     }
 
@@ -452,6 +484,18 @@ export function buildUpdateMachineUpdate(machineId: string, updateSeq: number, u
     };
 }
 
+export function buildDeleteMachineUpdate(machineId: string, updateSeq: number, updateId: string): UpdatePayload {
+    return {
+        id: updateId,
+        seq: updateSeq,
+        body: {
+            t: 'delete-machine',
+            machineId
+        },
+        createdAt: Date.now()
+    };
+}
+
 export function buildSessionActivityEphemeral(sessionId: string, active: boolean, activeAt: number, thinking?: boolean): EphemeralPayload {
     return {
         type: 'activity',
@@ -487,6 +531,22 @@ export function buildMachineStatusEphemeral(machineId: string, online: boolean):
         type: 'machine-status',
         machineId,
         online,
+        timestamp: Date.now()
+    };
+}
+
+/**
+ * Session-level lifecycle event (Claude finished, needs permission, asks question).
+ * Emitted alongside the mobile push so other clients (e.g. web) can surface a
+ * tab-title counter or inline indicator without parsing every encrypted message.
+ */
+export function buildSessionEventEphemeral(sessionId: string, kind: 'done' | 'permission' | 'question', title: string, body: string): EphemeralPayload {
+    return {
+        type: 'session-event',
+        sessionId,
+        kind,
+        title,
+        body,
         timestamp: Date.now()
     };
 }
