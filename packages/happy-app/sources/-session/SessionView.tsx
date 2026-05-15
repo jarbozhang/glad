@@ -34,12 +34,14 @@ import { getVoiceMessageCount, getVoiceOnboardingPromptLoadCount } from '@/sync/
 import { isRunningOnMac } from '@/utils/platform';
 import { useDeviceType, useHeaderHeight, useIsLandscape, useIsTablet } from '@/utils/responsive';
 import { FilesSidebar, SidebarMode } from '@/components/FilesSidebar';
+import { DEFAULT_SIDEBAR_MODE } from '@/components/filesSidebarTabsModel';
 import { AllFilesDiffView } from '@/components/AllFilesDiffView';
 import { FileViewPanel } from '@/components/FileViewPanel';
 import { prefetchPierreDiff } from '@/components/diff/PierreDiffView';
 import { GitFileStatus } from '@/sync/gitStatusFiles';
 import { formatPathRelativeToHome, getResumeCommandBlock, getSessionName, useSessionStatus } from '@/utils/sessionUtils';
 import { useSessionQuickActions } from '@/hooks/useSessionQuickActions';
+import { useFileTransfer } from '@/hooks/useFileTransfer';
 import { isVersionSupported, MINIMUM_CLI_VERSION } from '@/utils/versionUtils';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -108,8 +110,10 @@ export const SessionView = React.memo((props: { id: string }) => {
 
     const [diffViewOpen, setDiffViewOpen] = React.useState(false);
     const [scrollToFile, setScrollToFile] = React.useState<string | null>(null);
-    const [sidebarMode, setSidebarMode] = React.useState<SidebarMode>('changes');
+    const [sidebarMode, setSidebarMode] = React.useState<SidebarMode>(DEFAULT_SIDEBAR_MODE);
     const [fileViewPath, setFileViewPath] = React.useState<string | null>(null);
+    const [directoryRefreshRequest, setDirectoryRefreshRequest] = React.useState({ key: 0, path: '.' });
+    const fileTransfer = useFileTransfer(sessionId);
 
     const handleSidebarFilePress = React.useCallback((file: GitFileStatus) => {
         if (file.status === 'deleted') return;
@@ -122,6 +126,20 @@ export const SessionView = React.memo((props: { id: string }) => {
         setScrollToFile(null);
         setFileViewPath(filePath);
     }, []);
+    const handleDirectoryFilePress = React.useCallback((filePath: string) => {
+        handleAllFilesFilePress(filePath);
+    }, [handleAllFilesFilePress]);
+    const handleDirectoryUpload = React.useCallback((targetDir: string) => {
+        fileTransfer.uploadFile(targetDir, () => {
+            setDirectoryRefreshRequest((request) => ({
+                key: request.key + 1,
+                path: targetDir || '.',
+            }));
+        });
+    }, [fileTransfer]);
+    const handleDirectoryDownload = React.useCallback((filePath: string) => {
+        fileTransfer.downloadFile(filePath);
+    }, [fileTransfer]);
     const closeDiffView = React.useCallback(() => {
         setDiffViewOpen(false);
         setScrollToFile(null);
@@ -288,6 +306,13 @@ export const SessionView = React.memo((props: { id: string }) => {
                         mode={sidebarMode}
                         onModeChange={setSidebarMode}
                         onAllFilesFilePress={handleAllFilesFilePress}
+                        onDirectoryFilePress={handleDirectoryFilePress}
+                        onDirectoryUpload={handleDirectoryUpload}
+                        onDirectoryDownload={handleDirectoryDownload}
+                        directoryTransferEnabled={fileTransfer.enabled}
+                        directoryTransferStatus={fileTransfer.uploading ? 'uploading' : fileTransfer.downloading ? 'downloading' : 'idle'}
+                        directoryRefreshKey={directoryRefreshRequest.key}
+                        directoryRefreshPath={directoryRefreshRequest.path}
                     />
                 </View>
             </Animated.View>

@@ -577,6 +577,7 @@ export const es: TranslationStructure = {
     },
 
     files: {
+        directory: 'Directorio',
         changes: 'Cambios',
         searchPlaceholder: 'Buscar archivos...',
         detachedHead: 'HEAD separado',
@@ -586,6 +587,13 @@ export const es: TranslationStructure = {
         searching: 'Buscando archivos...',
         noFilesFound: 'No se encontraron archivos',
         noFilesInProject: 'No hay archivos en el proyecto',
+        emptyDirectory: 'Directorio vacío',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Escribe al menos ${count} caracteres`,
         tryDifferentTerm: 'Intente un término de búsqueda diferente',
         searchResults: ({ count }: { count: number }) => `Resultados de búsqueda (${count})`,
         projectRoot: 'Raíz del proyecto',

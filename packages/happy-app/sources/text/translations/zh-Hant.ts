@@ -577,6 +577,7 @@ export const zhHant: TranslationStructure = {
     },
 
     files: {
+        directory: '檔案目錄',
         changes: '變更',
         searchPlaceholder: '搜尋檔案...',
         detachedHead: '游離 HEAD',
@@ -586,6 +587,13 @@ export const zhHant: TranslationStructure = {
         searching: '正在搜尋檔案...',
         noFilesFound: '未找到檔案',
         noFilesInProject: '專案中沒有檔案',
+        emptyDirectory: '空目錄',
+        uploadToThisDirectory: '上傳到此目錄',
+        uploadToProjectRoot: '上傳到專案根目錄',
+        downloadFile: '下載檔案',
+        uploading: '正在上傳...',
+        downloading: '正在下載...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `至少輸入 ${count} 個字元`,
         tryDifferentTerm: '嘗試不同的搜尋詞',
         searchResults: ({ count }: { count: number }) => `搜尋結果 (${count})`,
         projectRoot: '專案根目錄',

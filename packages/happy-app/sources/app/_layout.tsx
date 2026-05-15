@@ -121,11 +121,7 @@ async function loadFonts() {
             return;
         }
         loaded = true;
-        if (isTauri()) {
-            return;
-        }
-
-        await Fonts.loadAsync({
+        const fontAssets = {
             // Keep existing font
             SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
 
@@ -143,7 +139,16 @@ async function loadFonts() {
             'BricolageGrotesque-Bold': require('@/assets/fonts/BricolageGrotesque-Bold.ttf'),
 
             ...FontAwesome.font,
-        });
+        };
+
+        if (isTauri()) {
+            Fonts.loadAsync(fontAssets).catch((error) => {
+                console.warn('[fonts] Failed to load fonts in Tauri:', error);
+            });
+            return;
+        }
+
+        await Fonts.loadAsync(fontAssets);
     });
 }
 

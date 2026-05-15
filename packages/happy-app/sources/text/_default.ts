@@ -591,6 +591,7 @@ export const en = {
     },
 
     files: {
+        directory: 'Directory',
         changes: 'Changes',
         searchPlaceholder: 'Search files...',
         detachedHead: 'detached HEAD',
@@ -600,6 +601,13 @@ export const en = {
         searching: 'Searching files...',
         noFilesFound: 'No files found',
         noFilesInProject: 'No files in project',
+        emptyDirectory: 'Empty directory',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Type at least ${count} characters`,
         tryDifferentTerm: 'Try a different search term',
         searchResults: ({ count }: { count: number }) => `Search Results (${count})`,
         projectRoot: 'Project root',

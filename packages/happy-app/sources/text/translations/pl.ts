@@ -593,6 +593,7 @@ export const pl: TranslationStructure = {
     },
 
     files: {
+        directory: 'Katalog',
         changes: 'Zmiany',
         searchPlaceholder: 'Wyszukaj pliki...',
         detachedHead: 'odłączony HEAD',
@@ -602,6 +603,13 @@ export const pl: TranslationStructure = {
         searching: 'Wyszukiwanie plików...',
         noFilesFound: 'Nie znaleziono plików',
         noFilesInProject: 'Brak plików w projekcie',
+        emptyDirectory: 'Pusty katalog',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Wpisz co najmniej ${count} znaki`,
         tryDifferentTerm: 'Spróbuj innego terminu wyszukiwania',
         searchResults: ({ count }: { count: number }) => `Wyniki wyszukiwania (${count})`,
         projectRoot: 'Katalog główny projektu',
