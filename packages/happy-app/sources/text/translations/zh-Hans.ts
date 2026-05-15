@@ -570,6 +570,7 @@ export const zhHans: TranslationStructure = {
     },
 
     files: {
+        directory: '文件目录',
         changes: '更改',
         searchPlaceholder: '搜索文件...',
         detachedHead: '游离 HEAD',
@@ -579,6 +580,13 @@ export const zhHans: TranslationStructure = {
         searching: '正在搜索文件...',
         noFilesFound: '未找到文件',
         noFilesInProject: '项目中没有文件',
+        emptyDirectory: '空目录',
+        uploadToThisDirectory: '上传到此目录',
+        uploadToProjectRoot: '上传到项目根目录',
+        downloadFile: '下载文件',
+        uploading: '正在上传...',
+        downloading: '正在下载...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `至少输入 ${count} 个字符`,
         tryDifferentTerm: '尝试不同的搜索词',
         searchResults: ({ count }: { count: number }) => `搜索结果 (${count})`,
         projectRoot: '项目根目录',

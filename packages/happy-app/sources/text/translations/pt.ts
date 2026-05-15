@@ -568,6 +568,7 @@ export const pt: TranslationStructure = {
     },
 
     files: {
+        directory: 'Diretório',
         changes: 'Alterações',
         searchPlaceholder: 'Buscar arquivos...',
         detachedHead: 'HEAD desanexado',
@@ -577,6 +578,13 @@ export const pt: TranslationStructure = {
         searching: 'Buscando arquivos...',
         noFilesFound: 'Nenhum arquivo encontrado',
         noFilesInProject: 'Nenhum arquivo no projeto',
+        emptyDirectory: 'Diretório vazio',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Digite pelo menos ${count} caracteres`,
         tryDifferentTerm: 'Tente um termo de busca diferente',
         searchResults: ({ count }: { count: number }) => `Resultados da busca (${count})`,
         projectRoot: 'Raiz do projeto',

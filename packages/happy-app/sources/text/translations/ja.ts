@@ -570,6 +570,7 @@ export const ja: TranslationStructure = {
     },
 
     files: {
+        directory: 'ディレクトリ',
         changes: '変更',
         searchPlaceholder: 'ファイルを検索...',
         detachedHead: 'detached HEAD',
@@ -579,6 +580,13 @@ export const ja: TranslationStructure = {
         searching: 'ファイルを検索中...',
         noFilesFound: 'ファイルが見つかりません',
         noFilesInProject: 'プロジェクトにファイルがありません',
+        emptyDirectory: '空のディレクトリ',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `${count}文字以上入力してください`,
         tryDifferentTerm: '別の検索語を試してください',
         searchResults: ({ count }: { count: number }) => `検索結果 (${count})`,
         projectRoot: 'プロジェクトルート',

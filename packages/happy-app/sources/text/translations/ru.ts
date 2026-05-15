@@ -585,6 +585,7 @@ export const ru: TranslationStructure = {
     },
 
     files: {
+        directory: 'Папки',
         changes: 'Изменения',
         searchPlaceholder: 'Поиск файлов...',
         detachedHead: 'отделённый HEAD',
@@ -594,6 +595,13 @@ export const ru: TranslationStructure = {
         searching: 'Поиск файлов...',
         noFilesFound: 'Файлы не найдены',
         noFilesInProject: 'Файлов в проекте нет',
+        emptyDirectory: 'Пустая папка',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Введите минимум ${count} символа`,
         tryDifferentTerm: 'Попробуйте другой поисковый запрос',
         searchResults: ({ count }: { count: number }) => `Результаты поиска (${count})`,
         projectRoot: 'Корень проекта',

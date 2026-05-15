@@ -569,6 +569,7 @@ export const ca: TranslationStructure = {
     },
 
     files: {
+        directory: 'Directori',
         changes: 'Canvis',
         searchPlaceholder: 'Cerca fitxers...',
         detachedHead: 'HEAD separat',
@@ -578,6 +579,13 @@ export const ca: TranslationStructure = {
         searching: 'Cercant fitxers...',
         noFilesFound: 'No s\'han trobat fitxers',
         noFilesInProject: 'No hi ha fitxers al projecte',
+        emptyDirectory: 'Directori buit',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Escriu almenys ${count} caràcters`,
         tryDifferentTerm: 'Prova un terme de cerca diferent',
         searchResults: ({ count }: { count: number }) => `Resultats de la cerca (${count})`,
         projectRoot: 'Arrel del projecte',

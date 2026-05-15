@@ -15,8 +15,10 @@ import { FileIcon } from '@/components/FileIcon';
 import { Typography } from '@/constants/Typography';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
+import { DirectoryTreeTab } from './DirectoryTreeTab';
+import { DEFAULT_SIDEBAR_MODE, SidebarMode } from './filesSidebarTabsModel';
 
-export type SidebarMode = 'changes' | 'allFiles';
+export type { SidebarMode } from './filesSidebarTabsModel';
 
 interface FilesSidebarProps {
     sessionId: string;
@@ -25,6 +27,13 @@ interface FilesSidebarProps {
     mode?: SidebarMode;
     onModeChange?: (mode: SidebarMode) => void;
     onAllFilesFilePress?: (filePath: string) => void;
+    onDirectoryFilePress?: (filePath: string, size?: number) => void;
+    onDirectoryUpload?: (targetDir: string) => void;
+    onDirectoryDownload?: (filePath: string) => void;
+    directoryTransferEnabled?: boolean;
+    directoryTransferStatus?: 'idle' | 'uploading' | 'downloading';
+    directoryRefreshKey?: number;
+    directoryRefreshPath?: string;
 }
 
 type FileNode<T = GitFileStatus> = {
@@ -149,9 +158,16 @@ export const FilesSidebar = React.memo<FilesSidebarProps>(({
     sessionId,
     selectedPath,
     onFilePress,
-    mode = 'changes',
+    mode = DEFAULT_SIDEBAR_MODE,
     onModeChange,
     onAllFilesFilePress,
+    onDirectoryFilePress,
+    onDirectoryUpload,
+    onDirectoryDownload,
+    directoryTransferEnabled = false,
+    directoryTransferStatus = 'idle',
+    directoryRefreshKey = 0,
+    directoryRefreshPath = '.',
 }) => {
     const router = useRouter();
     const { theme } = useUnistyles();
@@ -211,6 +227,20 @@ export const FilesSidebar = React.memo<FilesSidebarProps>(({
                 {onModeChange ? (
                     <View style={styles.tabRow}>
                         <Pressable
+                            onPress={() => onModeChange('directory')}
+                            style={[
+                                styles.tab,
+                                mode === 'directory' && { backgroundColor: theme.colors.surface },
+                            ]}
+                        >
+                            <Text style={[
+                                styles.tabText,
+                                mode === 'directory' && styles.tabTextActive,
+                            ]} numberOfLines={1}>
+                                {t('files.directory')}
+                            </Text>
+                        </Pressable>
+                        <Pressable
                             onPress={() => onModeChange('changes')}
                             style={[
                                 styles.tab,
@@ -254,6 +284,20 @@ export const FilesSidebar = React.memo<FilesSidebarProps>(({
                 ) : null}
             </View>
 
+            <DirectoryTreeTab
+                sessionId={sessionId}
+                selectedPath={selectedPath ?? null}
+                enabled={mode === 'directory'}
+                visible={mode === 'directory'}
+                onFilePress={onDirectoryFilePress}
+                onUploadDirectory={onDirectoryUpload}
+                onDownloadFile={onDirectoryDownload}
+                transferEnabled={directoryTransferEnabled}
+                transferStatus={directoryTransferStatus}
+                refreshKey={directoryRefreshKey}
+                refreshPath={directoryRefreshPath}
+            />
+
             {mode === 'changes' ? (
                 <ScrollView style={styles.list} showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
                     {!hasFiles ? (
@@ -280,13 +324,13 @@ export const FilesSidebar = React.memo<FilesSidebarProps>(({
                         </View>
                     )}
                 </ScrollView>
-            ) : (
+            ) : mode === 'allFiles' ? (
                 <AllFilesTab
                     sessionId={sessionId}
                     selectedPath={selectedPath ?? null}
                     onFilePress={onAllFilesFilePress}
                 />
-            )}
+            ) : null}
         </View>
     );
 });

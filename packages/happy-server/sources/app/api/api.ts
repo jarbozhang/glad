@@ -23,6 +23,7 @@ import { feedRoutes } from "./routes/feedRoutes";
 import { kvRoutes } from "./routes/kvRoutes";
 import { v3SessionRoutes } from "./routes/v3SessionRoutes";
 import { attachmentRoutes } from "./routes/attachmentRoutes";
+import { fileTransferRoutes } from "./routes/fileTransferRoutes";
 import { isLocalStorage, getLocalFilesDir } from "@/storage/files";
 import * as path from "path";
 import * as fs from "fs";
@@ -101,6 +102,7 @@ export async function startApi() {
     kvRoutes(typed);
     v3SessionRoutes(typed);
     attachmentRoutes(typed);
+    fileTransferRoutes(typed);
 
     // Start HTTP 
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3005;

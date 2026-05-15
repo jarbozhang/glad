@@ -48,7 +48,10 @@ function loadPierre(): Promise<PierreBundle> {
             const main = await import('@pierre/diffs');
             const react = await import('@pierre/diffs/react');
             return { main, react };
-        })();
+        })().catch((error) => {
+            pierreBundlePromise = null;
+            throw error;
+        });
     }
     return pierreBundlePromise;
 }
@@ -59,17 +62,32 @@ function loadPierre(): Promise<PierreBundle> {
  */
 export function prefetchPierreDiff(): void {
     if (Platform.OS !== 'web') return;
-    void loadPierre();
+    void loadPierre().catch((error) => {
+        console.warn('[diff] Failed to prefetch Pierre diff renderer:', error);
+    });
 }
 
-function usePierreBundle(): PierreBundle | null {
-    const [bundle, setBundle] = React.useState<PierreBundle | null>(null);
+function usePierreBundle(): { bundle: PierreBundle | null; error: unknown | null } {
+    const [state, setState] = React.useState<{ bundle: PierreBundle | null; error: unknown | null }>({
+        bundle: null,
+        error: null,
+    });
+
     React.useEffect(() => {
         let cancelled = false;
-        loadPierre().then((b) => { if (!cancelled) setBundle(b); });
+        loadPierre().then(
+            (bundle) => {
+                if (!cancelled) setState({ bundle, error: null });
+            },
+            (error) => {
+                console.warn('[diff] Failed to load Pierre diff renderer:', error);
+                if (!cancelled) setState({ bundle: null, error });
+            },
+        );
         return () => { cancelled = true; };
     }, []);
-    return bundle;
+
+    return state;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -80,8 +98,9 @@ const PierreDiffViewWeb = React.memo(function PierreDiffViewWeb(props: PierreDif
     const { theme } = useUnistyles();
     const themeName: 'dark' | 'light' = props.theme ?? (theme.dark ? 'dark' : 'light');
     const diffsTheme = themeName === 'dark' ? 'github-dark-default' : 'github-light-default';
-    const bundle = usePierreBundle();
+    const { bundle, error } = usePierreBundle();
 
+    if (error) return <PierreDiffViewNative {...props} />;
     if (!bundle) return <DiffSkeleton />;
 
     const options = {
