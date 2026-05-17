@@ -52,6 +52,7 @@ export default {
                 backgroundColor: "#18171C"
             },
             permissions: [
+                "android.permission.CAMERA",
                 "android.permission.RECORD_AUDIO",
                 "android.permission.MODIFY_AUDIO_SETTINGS",
                 "android.permission.ACCESS_NETWORK_STATE",
@@ -89,6 +90,7 @@ export default {
         },
         plugins: [
             require("./plugins/withEinkCompatibility.js"),
+            require("./plugins/withAndroidCameraBarcodeScannerDisabled.js"),
             [
                 "expo-router",
                 {
@@ -101,7 +103,6 @@ export default {
             "expo-mail-composer",
             "expo-secure-store",
             "expo-web-browser",
-            "react-native-vision-camera",
             "@more-tech/react-native-libsodium",
             "react-native-audio-api",
             "@livekit/react-native-expo-plugin",

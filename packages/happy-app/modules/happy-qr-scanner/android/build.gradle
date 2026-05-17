@@ -1,0 +1,27 @@
+plugins {
+    id 'com.android.library'
+    id 'expo-module-gradle-plugin'
+}
+
+group = 'engineering.happy'
+version = '1.0.0'
+
+android {
+    namespace "engineering.happy.qrscanner"
+
+    defaultConfig {
+        versionCode 1
+        versionName "1.0.0"
+    }
+}
+
+dependencies {
+    def camerax_version = "1.5.1"
+
+    implementation "androidx.activity:activity-ktx:1.9.3"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-view:${camerax_version}"
+    implementation "com.google.zxing:core:3.5.3"
+}
