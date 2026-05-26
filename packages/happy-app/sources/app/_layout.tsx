@@ -35,6 +35,7 @@ import { navigateToSession } from '@/hooks/useNavigateToSession';
 import { applyVoiceUpsellOverride } from '@/realtime/voiceExperiment';
 import { useTauriZoom } from '@/hooks/useTauriZoom';
 import { useTauriDrag } from '@/hooks/useTauriDrag';
+import { useTauriStyleRecovery } from '@/hooks/useTauriStyleRecovery';
 
 // Configure notification handler for foreground notifications.
 // Skip in Tauri because expo-notifications native module is not available in the webview.
@@ -184,6 +185,7 @@ function getDevWebQueryCredentials(): AuthCredentials | null {
 export default function RootLayout() {
     useTauriZoom();
     useTauriDrag();
+    useTauriStyleRecovery();
     const router = useRouter();
     const { theme } = useUnistyles();
     const navigationTheme = React.useMemo(() => {
