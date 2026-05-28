@@ -12,6 +12,7 @@ pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_localhost::Builder::new(port).build())
     .plugin(tauri_plugin_http::init())
+    .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_window_state::Builder::default().build())
     .plugin(tauri_plugin_dialog::init())
@@ -29,7 +30,6 @@ pub fn run() {
           webview.navigate(local_url.clone())?;
         }
       }
-
       if cfg!(debug_assertions) {
         app.handle().plugin(
           tauri_plugin_log::Builder::default()

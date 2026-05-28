@@ -67,6 +67,7 @@ const SectionHeader = React.memo(({ session, displayPath }: { session: SessionRo
     const repoDisplayPath = isWorktree
         ? formatPathRelativeToHome(repoPath, session.homeDir ?? undefined)
         : displayPath;
+    const repoFolderName = repoPath.split(/[/\\]/).filter(Boolean).pop() || repoDisplayPath;
     const worktreeName = isWorktree ? getWorktreeName(sessionPath) : null;
 
     const gitInfo = useSectionGitInfo(session.id);
@@ -103,7 +104,7 @@ const SectionHeader = React.memo(({ session, displayPath }: { session: SessionRo
             {/* Path + branch */}
             <View style={styles.sectionHeaderContent}>
                 <Text style={styles.sectionHeaderPath} numberOfLines={1}>
-                    {repoDisplayPath}
+                    {repoFolderName}
                 </Text>
                 {hasBranch && (
                     <View style={styles.branchRow}>
@@ -316,6 +317,32 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
         onLongPress: showActionAlert,
     };
 
+    const renderLeadingIndicator = () => {
+        let indicator: React.ReactNode = null;
+
+        if (session.hasUnread) {
+            indicator = <StatusDot color={status.dotColor} isPulsing={false} />;
+        } else if (session.state === 'waiting' && session.hasDraft) {
+            indicator = (
+                <Ionicons
+                    name="create-outline"
+                    size={14}
+                    color={theme.colors.textSecondary}
+                />
+            );
+        } else if (session.state === 'permission_required' || session.state === 'thinking') {
+            indicator = <StatusDot color={status.dotColor} isPulsing={status.isPulsing} />;
+        } else if (session.state === 'waiting') {
+            indicator = <StatusDot color={theme.colors.textSecondary} isPulsing={false} />;
+        }
+
+        return (
+            <View style={styles.leadingIndicatorSlot}>
+                {indicator}
+            </View>
+        );
+    };
+
     const itemContent = (
         <Pressable
             style={[
@@ -328,44 +355,7 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
         >
             <View style={styles.sessionContent}>
                 <View style={styles.sessionTitleRow}>
-                    {(() => {
-                        if (session.hasUnread) {
-                            return (
-                                <View style={[styles.statusDotContainer, { marginRight: 8 }]}>
-                                    <StatusDot color={status.dotColor} isPulsing={false} />
-                                </View>
-                            );
-                        }
-
-                        if (session.state === 'waiting' && session.hasDraft) {
-                            return (
-                                <Ionicons
-                                    name="create-outline"
-                                    size={14}
-                                    color={theme.colors.textSecondary}
-                                    style={{ marginRight: 8 }}
-                                />
-                            );
-                        }
-
-                        if (session.state === 'permission_required' || session.state === 'thinking') {
-                            return (
-                                <View style={[styles.statusDotContainer, { marginRight: 8 }]}>
-                                    <StatusDot color={status.dotColor} isPulsing={status.isPulsing} />
-                                </View>
-                            );
-                        }
-
-                        if (session.state === 'waiting') {
-                            return (
-                                <View style={[styles.statusDotContainer, { marginRight: 8 }]}>
-                                    <StatusDot color={theme.colors.textSecondary} isPulsing={false} />
-                                </View>
-                            );
-                        }
-
-                        return null;
-                    })()}
+                    {renderLeadingIndicator()}
 
                     <Text
                         style={[
@@ -455,6 +445,7 @@ const stylesheet = StyleSheet.create((theme) => ({
         lineHeight: Platform.select({ ios: 18, default: 20 }),
         letterSpacing: Platform.select({ ios: -0.08, default: 0.1 }),
         fontWeight: Platform.select({ ios: 'normal', default: '500' }),
+        flexShrink: 1,
     },
     branchRow: {
         flexDirection: 'row',
@@ -552,11 +543,12 @@ const stylesheet = StyleSheet.create((theme) => ({
     sessionTitleDisconnected: {
         color: theme.colors.textSecondary,
     },
-    statusDotContainer: {
+    leadingIndicatorSlot: {
         alignItems: 'center',
         justifyContent: 'center',
         width: 16,
         height: 16,
+        marginRight: 8,
     },
     swipeAction: {
         width: 112,
