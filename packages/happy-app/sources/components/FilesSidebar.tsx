@@ -34,6 +34,8 @@ interface FilesSidebarProps {
     directoryTransferStatus?: 'idle' | 'uploading' | 'downloading';
     directoryRefreshKey?: number;
     directoryRefreshPath?: string;
+    directoryActivityRefreshKey?: string | number;
+    directoryAutoRefreshIntervalMs?: number;
 }
 
 type FileNode<T = GitFileStatus> = {
@@ -168,6 +170,8 @@ export const FilesSidebar = React.memo<FilesSidebarProps>(({
     directoryTransferStatus = 'idle',
     directoryRefreshKey = 0,
     directoryRefreshPath = '.',
+    directoryActivityRefreshKey,
+    directoryAutoRefreshIntervalMs,
 }) => {
     const router = useRouter();
     const { theme } = useUnistyles();
@@ -296,6 +300,8 @@ export const FilesSidebar = React.memo<FilesSidebarProps>(({
                 transferStatus={directoryTransferStatus}
                 refreshKey={directoryRefreshKey}
                 refreshPath={directoryRefreshPath}
+                activityRefreshKey={directoryActivityRefreshKey}
+                autoRefreshIntervalMs={directoryAutoRefreshIntervalMs}
             />
 
             {mode === 'changes' ? (

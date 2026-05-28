@@ -114,6 +114,17 @@ export const SessionView = React.memo((props: { id: string }) => {
     const [fileViewPath, setFileViewPath] = React.useState<string | null>(null);
     const [directoryRefreshRequest, setDirectoryRefreshRequest] = React.useState({ key: 0, path: '.' });
     const fileTransfer = useFileTransfer(sessionId);
+    const directoryActivityRefreshKey = React.useMemo(() => {
+        if (!session) return 0;
+        return [
+            session.seq ?? 0,
+            session.updatedAt ?? 0,
+            session.agentStateVersion ?? 0,
+            session.metadataVersion ?? 0,
+            session.thinking ? 1 : 0,
+        ].join(':');
+    }, [session]);
+    const directoryAutoRefreshIntervalMs = session?.thinking ? 7000 : 45000;
 
     const handleSidebarFilePress = React.useCallback((file: GitFileStatus) => {
         if (file.status === 'deleted') return;
@@ -313,6 +324,8 @@ export const SessionView = React.memo((props: { id: string }) => {
                         directoryTransferStatus={fileTransfer.uploading ? 'uploading' : fileTransfer.downloading ? 'downloading' : 'idle'}
                         directoryRefreshKey={directoryRefreshRequest.key}
                         directoryRefreshPath={directoryRefreshRequest.path}
+                        directoryActivityRefreshKey={directoryActivityRefreshKey}
+                        directoryAutoRefreshIntervalMs={sidebarMode === 'directory' ? directoryAutoRefreshIntervalMs : undefined}
                     />
                 </View>
             </Animated.View>
