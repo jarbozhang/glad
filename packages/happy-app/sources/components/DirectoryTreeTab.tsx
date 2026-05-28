@@ -39,11 +39,15 @@ interface DirectoryTreeTabProps {
     transferStatus?: 'idle' | 'uploading' | 'downloading';
     refreshKey?: number;
     refreshPath?: string;
+    activityRefreshKey?: string | number;
+    autoRefreshIntervalMs?: number;
 }
 
 const INDENT_PX = 10;
 const CHEVRON_DURATION = 160;
 const EASING = Easing.out(Easing.cubic);
+const ACTIVITY_REFRESH_DEBOUNCE_MS = 750;
+const MAX_AUTO_REFRESH_DIRS = 20;
 
 export const DirectoryTreeTab = React.memo(function DirectoryTreeTab({
     sessionId,
@@ -57,6 +61,8 @@ export const DirectoryTreeTab = React.memo(function DirectoryTreeTab({
     transferStatus = 'idle',
     refreshKey = 0,
     refreshPath = '.',
+    activityRefreshKey,
+    autoRefreshIntervalMs,
 }: DirectoryTreeTabProps) {
     const { theme } = useUnistyles();
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -78,6 +84,8 @@ export const DirectoryTreeTab = React.memo(function DirectoryTreeTab({
     const [contextMenuAnchor, setContextMenuAnchor] = React.useState<DirectoryContextMenuAnchor | null>(null);
     const [contextMenuTarget, setContextMenuTarget] = React.useState<DirectoryContextMenuTarget | null>(null);
     const lastRefreshKeyRef = React.useRef(refreshKey);
+    const lastActivityRefreshKeyRef = React.useRef(activityRefreshKey);
+    const refreshingPathsRef = React.useRef(new Set<string>());
 
     React.useEffect(() => {
         loadedDirsRef.current = loadedDirs;
@@ -255,6 +263,9 @@ export const DirectoryTreeTab = React.memo(function DirectoryTreeTab({
 
     const refreshDirectory = React.useCallback(async (dirPath: string) => {
         const targetPath = dirPath || '.';
+        if (refreshingPathsRef.current.has(targetPath)) return;
+        refreshingPathsRef.current.add(targetPath);
+
         const nextLoadedDirs = new Set(loadedDirsRef.current);
         nextLoadedDirs.delete(targetPath);
         loadedDirsRef.current = nextLoadedDirs;
@@ -286,6 +297,7 @@ export const DirectoryTreeTab = React.memo(function DirectoryTreeTab({
             const raw = e instanceof Error ? e.message : 'Unknown error';
             setError(getFriendlyDirectoryRpcError(raw, 'Failed to refresh directory'));
         } finally {
+            refreshingPathsRef.current.delete(targetPath);
             if (!mountedRef.current || activeSessionRef.current !== sessionId) return;
             setLoadingPaths((prev) => {
                 const next = new Set(prev);
@@ -295,11 +307,41 @@ export const DirectoryTreeTab = React.memo(function DirectoryTreeTab({
         }
     }, [expandedPaths, markLoaded, sessionId]);
 
+    const refreshVisibleDirectories = React.useCallback(() => {
+        const paths = ['.', ...Array.from(expandedPaths)]
+            .filter((path, index, self) => self.indexOf(path) === index)
+            .slice(0, MAX_AUTO_REFRESH_DIRS);
+        for (const path of paths) {
+            void refreshDirectory(path);
+        }
+    }, [expandedPaths, refreshDirectory]);
+
     React.useEffect(() => {
         if (!enabled || loadedSessionRef.current !== sessionId || refreshKey === lastRefreshKeyRef.current) return;
         lastRefreshKeyRef.current = refreshKey;
         void refreshDirectory(refreshPath);
     }, [enabled, refreshDirectory, refreshKey, refreshPath, sessionId]);
+
+    React.useEffect(() => {
+        if (
+            !enabled ||
+            !visible ||
+            loadedSessionRef.current !== sessionId ||
+            activityRefreshKey === undefined ||
+            activityRefreshKey === lastActivityRefreshKeyRef.current
+        ) {
+            return;
+        }
+        lastActivityRefreshKeyRef.current = activityRefreshKey;
+        const timer = setTimeout(refreshVisibleDirectories, ACTIVITY_REFRESH_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [activityRefreshKey, enabled, refreshVisibleDirectories, sessionId, visible]);
+
+    React.useEffect(() => {
+        if (!enabled || !visible || loadedSessionRef.current !== sessionId || !autoRefreshIntervalMs || autoRefreshIntervalMs <= 0) return;
+        const timer = setInterval(refreshVisibleDirectories, autoRefreshIntervalMs);
+        return () => clearInterval(timer);
+    }, [autoRefreshIntervalMs, enabled, refreshVisibleDirectories, sessionId, visible]);
 
     const toggleDir = React.useCallback((dirPath: string) => {
         setExpandedPaths((prev) => {
