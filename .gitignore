@@ -44,9 +44,12 @@ yarn-error.*
 
 .claude/settings.local.json
 .claude/*.lock
+.claude/worktrees/
 .plan
 
 CLAUDE.local.md
+CLAUDE.md
+.claude/CLAUDE.md
 
 .dev/worktree/*
 
@@ -62,3 +65,11 @@ progress*.txt
 
 # OpenCode trace output (script is committed, output is not)
 docs/competition/opencode/traces/
+
+# E2E test artifacts
+e2e-*.png
+.playwright-mcp/
+
+# scratch tooling
+.cdp-scripts/
+happy-workspaces/

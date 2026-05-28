@@ -1,12 +1,20 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions",
+  "description": "Desktop capabilities for Happy — P0 plugins only",
+  "remote": {
+    "urls": [
+      "http://localhost:*"
+    ]
+  },
   "windows": [
     "main"
   ],
   "permissions": [
     "core:default",
+    "core:webview:allow-set-webview-zoom",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
     "http:default",
     {
       "identifier": "http:default",
@@ -16,6 +24,39 @@
         },
         {
           "url": "http://**"
+        }
+      ]
+    },
+    "notification:default",
+    "notification:allow-is-permission-granted",
+    "notification:allow-request-permission",
+    "notification:allow-notify",
+    "window-state:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "store:allow-load",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-delete",
+    "store:allow-save",
+    "fs:allow-read-file",
+    "fs:allow-stat",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "$HOME/*"
+        },
+        {
+          "path": "$HOME/**/*"
+        },
+        {
+          "path": "$TEMP/*"
+        },
+        {
+          "path": "$TEMP/**/*"
         }
       ]
     }

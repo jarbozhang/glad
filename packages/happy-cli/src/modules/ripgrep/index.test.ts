@@ -39,4 +39,11 @@ describe('ripgrep low-level wrapper', () => {
         expect(result.exitCode).toBe(0)
         expect(result.stdout).toContain('describe')
     })
+
+    it('should truncate stdout when output exceeds the configured limit', async () => {
+        const result = await run(['--files'], { maxStdoutBytes: 1024 })
+        expect(result.exitCode).toBe(0)
+        expect(result.truncated).toBe(true)
+        expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(1024)
+    })
 })

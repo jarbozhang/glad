@@ -83,12 +83,14 @@ export const ca: TranslationStructure = {
         permissionRequired: 'permís requerit',
         activeNow: 'Actiu ara',
         unknown: 'desconegut',
+        unread: 'nous resultats',
     },
 
     time: {
         justNow: 'ara mateix',
         minutesAgo: ({ count }: { count: number }) => `fa ${count} minut${count !== 1 ? 's' : ''}`,
         hoursAgo: ({ count }: { count: number }) => `fa ${count} hora${count !== 1 ? 'es' : ''}`,
+        daysAgo: ({ count }: { count: number }) => `fa ${count} dia${count !== 1 ? 's' : ''}`,
     },
 
     connect: {
@@ -104,6 +106,8 @@ export const ca: TranslationStructure = {
         connectAccount: 'Connectar compte',
         github: 'GitHub',
         machines: 'Màquines',
+        showOfflineMachines: ({ count }: { count: number }) => count === 1 ? 'Mostra 1 màquina fora de línia' : `Mostra ${count} màquines fora de línia`,
+        hideOfflineMachines: 'Amaga màquines fora de línia',
         features: 'Funcions',
         social: 'Social',
         account: 'Compte',
@@ -169,6 +173,12 @@ export const ca: TranslationStructure = {
         showLineNumbersInToolViewsDescription: 'Mostra els números de línia a les diferències de vistes d\'eines',
         wrapLinesInDiffs: 'Ajusta les línies a les diferències',
         wrapLinesInDiffsDescription: 'Ajusta les línies llargues en lloc de desplaçament horitzontal a les vistes de diferències',
+        diffStyle: 'Vista de diferències',
+        diffStyleDescription: 'Mostra les diferències en una sola columna (unified) o una al costat de l\'altra (split). La vista split només funciona al web.',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: 'Mostra sempre la mida del context',
         alwaysShowContextSizeDescription: 'Mostra l\'ús del context fins i tot quan no estigui prop del límit',
         avatarStyle: 'Estil d\'avatar',
@@ -180,8 +190,6 @@ export const ca: TranslationStructure = {
         },
         showFlavorIcons: "Mostrar icones de proveïdors d'IA",
         showFlavorIconsDescription: "Mostrar icones del proveïdor d'IA als avatars de sessió",
-        compactSessionView: 'Vista compacta de sessions',
-        compactSessionViewDescription: 'Mostra les sessions actives en un disseny més compacte',
     },
 
     settingsFeatures: {
@@ -203,6 +211,13 @@ export const ca: TranslationStructure = {
         markdownCopyV2Subtitle: 'Pulsació llarga obre modal de còpia',
         hideInactiveSessions: 'Amaga les sessions inactives',
         hideInactiveSessionsSubtitle: 'Mostra només els xats actius a la llista',
+        privacy: 'Privadesa',
+        privacyDescription: 'Desactiva completament tota l\'analítica i telemetria. No s\'enviaran dades a PostHog ni a cap altre servei de seguiment.',
+        disableAnalytics: 'Desactivar analítica',
+        analyticsDisabled: 'Tot el seguiment i telemetria desactivats',
+        analyticsEnabled: 'Analítica anònima d\'ús activa',
+        imageUpload: 'Pujada d\'imatges',
+        imageUploadSubtitle: 'Adjunta imatges als missatges perquè Claude les analitzi',
     },
 
     errors: {
@@ -275,6 +290,24 @@ export const ca: TranslationStructure = {
         inputPlaceholder: 'Escriu un missatge...',
         inactiveArchived: 'Aquesta sessió està inactiva.',
         resumeFromTerminal: 'Per reprendre-la des del terminal:',
+        newChat: 'Nou xat',
+        forkAction: 'Bifurca la sessió',
+        forkSubtitle: 'Continua en una nova sessió amb el mateix context',
+        duplicateAction: 'Duplica des d\'un missatge…',
+        duplicateSubtitle: 'Torna a un punt escollit i prova de nou',
+        forkFromHere: 'Bifurca des d\'aquí',
+        duplicateSheetTitle: 'Tria un punt de retrocés',
+        duplicateSheetSubtitle: 'La nova sessió conservarà el torn escollit complet (el teu missatge i la resposta de l\'agent) i descartarà els missatges següents.',
+        duplicateSheetConfirm: 'Duplica',
+        duplicateSheetEmpty: 'Encara no hi ha missatges per retrocedir en aquesta sessió.',
+        duplicateRowDisabled: 'Aquest missatge no es pot usar com a punt de retrocés.',
+        forkedFromLabel: 'Bifurcat de',
+        forkedFromSubtitle: 'Obre la sessió de la qual prové la bifurcació',
+        forkErrorOffline: 'La màquina està fora de línia. La bifurcació només està disponible mentre la màquina de la sessió estigui en línia.',
+        forkErrorMissingUuid: 'El punt de retrocés escollit ja no existeix a la sessió origen — prova a bifurcar sense truncar.',
+        forkErrorMissingMetadata: 'Falten metadades de la sessió necessàries per bifurcar.',
+        forkErrorGeneric: 'No s\'ha pogut bifurcar la sessió.',
+        forkClaudeOnly: 'La bifurcació només està disponible per a sessions de Claude.',
     },
 
     commandPalette: {
@@ -371,9 +404,12 @@ export const ca: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: 'Llest per programar?',
+            connectCli: 'Connecta el Happy CLI',
             installCli: 'Instal·la el Happy CLI',
             runIt: 'Executa\'l',
+            runCliAuth: 'Executa happy auth login o happy',
             scanQrCode: 'Escaneja el codi QR',
+            pasteTerminalUrl: "Enganxa l'URL del terminal",
             openCamera: 'Obre la càmera',
         },
     },
@@ -454,6 +490,11 @@ export const ca: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: 'Mostra arxivades',
         hideArchived: 'Amaga arxivades',
+        newSession: 'Nova sessió',
+    },
+
+    zen: {
+        toggle: 'Mode zen',
     },
 
     toolView: {
@@ -528,6 +569,8 @@ export const ca: TranslationStructure = {
     },
 
     files: {
+        directory: 'Directori',
+        changes: 'Canvis',
         searchPlaceholder: 'Cerca fitxers...',
         detachedHead: 'HEAD separat',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `${staged} preparats • ${unstaged} sense preparar`,
@@ -536,6 +579,13 @@ export const ca: TranslationStructure = {
         searching: 'Cercant fitxers...',
         noFilesFound: 'No s\'han trobat fitxers',
         noFilesInProject: 'No hi ha fitxers al projecte',
+        emptyDirectory: 'Directori buit',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `Escriu almenys ${count} caràcters`,
         tryDifferentTerm: 'Prova un terme de cerca diferent',
         searchResults: ({ count }: { count: number }) => `Resultats de la cerca (${count})`,
         projectRoot: 'Arrel del projecte',
@@ -549,7 +599,19 @@ export const ca: TranslationStructure = {
         file: 'Fitxer',
         fileEmpty: 'El fitxer està buit',
         noChanges: 'No hi ha canvis a mostrar',
+        noChangesTitle: 'Sense canvis',
+        noChangesSubtitle: 'L\'arbre de treball està net',
         deleted: 'Eliminat',
+        changedFiles: ({ count }: { count: number }) => `${count} ${count === 1 ? 'fitxer modificat' : 'fitxers modificats'}`,
+        allFiles: 'Tots els fitxers',
+        editFile: 'Editar',
+        saveFile: 'Desar',
+        failedToRead: 'No s\'ha pogut llegir el fitxer',
+        failedToSave: 'No s\'ha pogut desar el fitxer',
+        fileConflict: 'Conflicte de fitxer',
+        fileConflictDescription: 'Aquest fitxer s\'ha modificat al dispositiu mentre l\'editaves. Recarrega per veure la darrera versió.',
+        reload: 'Recarregar',
+        overwrite: 'Sobreescriure',
     },
 
     settingsVoice: {
@@ -760,6 +822,12 @@ export const ca: TranslationStructure = {
         lastDetected: 'Última detecció',
         untitledSession: 'Sessió sense títol',
         back: 'Enrere',
+        dangerZone: 'Zona de perill',
+        delete: 'Elimina la màquina',
+        deleteFooter: 'Elimina aquesta màquina del teu compte. L\'historial de sessions es conservarà, però no podràs iniciar noves sessions en aquesta màquina.',
+        deleteConfirmTitle: 'Eliminar aquesta màquina?',
+        deleteConfirmMessage: 'La màquina s\'eliminarà del teu compte. L\'historial de sessions es conservarà, però no podràs iniciar noves sessions fins que tornis a connectar el dimoni.',
+        deleteFailed: 'No s\'ha pogut eliminar la màquina.',
     },
 
     message: {
@@ -895,6 +963,21 @@ export const ca: TranslationStructure = {
         usageOverTime: 'Ús al llarg del temps',
         byModel: 'Per model',
         noData: "No hi ha dades d'ús disponibles",
+    },
+
+    imageUpload: {
+        permissionTitle: 'Accés a la biblioteca de fotos',
+        permissionMessage: "Permet l'accés a la teva biblioteca de fotos per adjuntar imatges als missatges.",
+        limitTitle: "Límit d'imatges assolit",
+        limitMessage: ({ max }: { max: number }) => `Pots adjuntar fins a ${max} imatges per missatge.`,
+        fileTooLargeTitle: 'Fitxer massa gran',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}" supera el límit de ${maxMb}MB i no s'ha afegit.`,
+        uploadFailedTitle: 'Error en la càrrega',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? 'No s\'ha pogut pujar una imatge i no s\'ha enviat.'
+            : `No s'han pogut pujar ${count} imatges i no s'han enviat.`,
+        notSupportedTitle: 'Imatges no compatibles',
+        notSupportedMessage: 'Aquest agent no admet imatges adjuntes. Només s\'ha enviat el text.',
     },
 
     feed: {

@@ -16,6 +16,7 @@ if (!useLocalStorage) {
     const s3Port = process.env.S3_PORT ? parseInt(process.env.S3_PORT, 10) : undefined;
     const s3UseSSL = process.env.S3_USE_SSL ? process.env.S3_USE_SSL === 'true' : true;
     const s3Region = process.env.S3_REGION || 'us-east-1';
+    const s3PathStyle = process.env.S3_PATH_STYLE ? process.env.S3_PATH_STYLE === 'true' : true;
     s3client = new Client({
         endPoint: process.env.S3_HOST!,
         port: s3Port,
@@ -23,6 +24,7 @@ if (!useLocalStorage) {
         accessKey: process.env.S3_ACCESS_KEY!,
         secretKey: process.env.S3_SECRET_KEY!,
         region: s3Region,
+        pathStyle: s3PathStyle,
     });
     s3bucket = process.env.S3_BUCKET!;
     s3host = process.env.S3_HOST!;
@@ -59,6 +61,35 @@ export async function putLocalFile(filePath: string, data: Buffer) {
     const fullPath = path.join(localFilesDir, filePath);
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
     fs.writeFileSync(fullPath, data);
+}
+
+/**
+ * Delete all attachments for a session.
+ * Local: removes the session attachments directory.
+ * S3: deletes all objects with prefix "sessions/{sessionId}/attachments/".
+ */
+export async function deleteSessionAttachments(sessionId: string): Promise<void> {
+    const prefix = `sessions/${sessionId}/attachments`;
+    if (useLocalStorage) {
+        const dir = path.join(localFilesDir, prefix);
+        if (fs.existsSync(dir)) {
+            fs.rmSync(dir, { recursive: true, force: true });
+        }
+        return;
+    }
+
+    // S3: list and delete all objects under the prefix
+    const stream = s3client.listObjects(s3bucket, prefix + '/', true);
+    const keys: string[] = await new Promise((resolve, reject) => {
+        const collected: string[] = [];
+        stream.on('data', (obj: { name: string }) => { if (obj.name) collected.push(obj.name); });
+        stream.on('end', () => resolve(collected));
+        stream.on('error', reject);
+    });
+
+    if (keys.length > 0) {
+        await s3client.removeObjects(s3bucket, keys);
+    }
 }
 
 export type ImageRef = {

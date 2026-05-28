@@ -37,6 +37,8 @@ export const MetadataSchema = z.object({
     codexThreadId: z.string().optional(), // Codex app-server thread ID
     tools: z.array(z.string()).optional(),
     slashCommands: z.array(z.string()).optional(),
+    mcpServers: z.array(z.object({ name: z.string(), status: z.string() })).optional(),
+    skills: z.array(z.string()).optional(),
     homeDir: z.string().optional(), // User's home directory on the machine
     happyHomeDir: z.string().optional(), // Happy configuration directory 
     startedFromDaemon: z.boolean().optional(),
@@ -49,6 +51,15 @@ export const MetadataSchema = z.object({
     lifecycleStateSince: z.number().optional(),
     archivedBy: z.string().optional(),
     archiveReason: z.string().optional(),
+    /**
+     * Lineage for sessions created via the fork / duplicate flow.
+     * `parentSessionId` is the Happy session this one was branched from.
+     * `forkedFromMessageId` is the in-app message id used as the rewind
+     * point (only set for "duplicate from message", not for plain fork).
+     * Both ride inside encrypted metadata so the server stays oblivious.
+     */
+    parentSessionId: z.string().optional(),
+    forkedFromMessageId: z.string().optional(),
 });
 
 export type Metadata = z.infer<typeof MetadataSchema>;

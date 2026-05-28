@@ -34,6 +34,11 @@ export const ApiDeleteSessionSchema = z.object({
     sid: z.string(), // Session ID
 });
 
+export const ApiDeleteMachineSchema = z.object({
+    t: z.literal('delete-machine'),
+    machineId: z.string(),
+});
+
 export const ApiUpdateAccountSchema = z.object({
     t: z.literal('update-account'),
     id: z.string(),
@@ -45,6 +50,21 @@ export const ApiUpdateAccountSchema = z.object({
     lastName: z.string().nullish(),
     avatar: ImageRefSchema.nullish(),
     github: GitHubProfileSchema.nullish(),
+});
+
+export const ApiNewMachineSchema = z.object({
+    t: z.literal('new-machine'),
+    machineId: z.string(),
+    seq: z.number(),
+    metadata: z.string(),
+    metadataVersion: z.number(),
+    daemonState: z.string().nullable(),
+    daemonStateVersion: z.number(),
+    dataEncryptionKey: z.string().nullable(),
+    active: z.boolean(),
+    activeAt: z.number(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
 });
 
 // Artifact update schemas
@@ -119,7 +139,9 @@ export const ApiUpdateSchema = z.union([
     ApiDeleteSessionSchema,
     ApiUpdateSessionStateSchema,
     ApiUpdateAccountSchema,
+    ApiNewMachineSchema,
     ApiUpdateMachineStateSchema,
+    ApiDeleteMachineSchema,
     ApiNewArtifactSchema,
     ApiUpdateArtifactSchema,
     ApiDeleteArtifactSchema,
@@ -184,10 +206,20 @@ export const ApiEphemeralMachineActivityUpdateSchema = z.object({
     activeAt: z.number(),
 });
 
+export const ApiEphemeralSessionEventUpdateSchema = z.object({
+    type: z.literal('session-event'),
+    sessionId: z.string(),
+    kind: z.enum(['done', 'permission', 'question']),
+    title: z.string(),
+    body: z.string(),
+    timestamp: z.number(),
+});
+
 export const ApiEphemeralUpdateSchema = z.union([
     ApiEphemeralActivityUpdateSchema,
     ApiEphemeralUsageUpdateSchema,
     ApiEphemeralMachineActivityUpdateSchema,
+    ApiEphemeralSessionEventUpdateSchema,
 ]);
 
 export type ApiEphemeralActivityUpdate = z.infer<typeof ApiEphemeralActivityUpdateSchema>;

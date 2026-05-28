@@ -2,10 +2,21 @@
   "$schema": "../../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Happy (preview)",
   "identifier": "com.slopus.happy.preview",
+  "build": {
+    "beforeBuildCommand": "APP_ENV=preview pnpm exec expo export --platform web --output-dir dist"
+  },
   "app": {
     "windows": [
       {
-        "title": "Happy (preview)"
+        "title": "Happy (preview)",
+        "width": 1680,
+        "height": 1050,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": {
+          "x": 22,
+          "y": 22
+        },
+        "hiddenTitle": true
       }
     ]
   }

@@ -6,6 +6,11 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { useAllMachines } from '@/sync/storage';
 import { isMachineOnline } from '@/utils/machineUtils';
 import { useRouter } from 'expo-router';
+import { RoundButton } from '@/components/RoundButton';
+import { useConnectTerminal } from '@/hooks/useConnectTerminal';
+import { Modal } from '@/modal';
+import { t } from '@/text';
+import { getConnectTerminalMode } from '@/utils/connectTerminalMode';
 
 const stylesheet = StyleSheet.create((theme) => ({
     container: {
@@ -52,6 +57,9 @@ const stylesheet = StyleSheet.create((theme) => ({
         fontWeight: '600',
         ...Typography.default('semiBold'),
     },
+    manualButtonWrapper: {
+        width: 220,
+    },
 }));
 
 export function EmptySessionsTablet() {
@@ -59,6 +67,8 @@ export function EmptySessionsTablet() {
     const styles = stylesheet;
     const router = useRouter();
     const machines = useAllMachines();
+    const { connectWithUrl, isLoading } = useConnectTerminal();
+    const showManualTerminalAuth = getConnectTerminalMode() === 'manual-only';
     
     const hasOnlineMachines = React.useMemo(() => {
         return machines.some(machine => isMachineOnline(machine));
@@ -67,6 +77,22 @@ export function EmptySessionsTablet() {
     const handleStartNewSession = () => {
         router.navigate('/new');
     };
+
+    const promptForTerminalUrl = React.useCallback(async () => {
+        const url = await Modal.prompt(
+            t('modals.authenticateTerminal'),
+            t('modals.pasteUrlFromTerminal'),
+            {
+                placeholder: 'happy://terminal?...',
+                cancelText: t('common.cancel'),
+                confirmText: t('common.authenticate')
+            }
+        );
+
+        if (url?.trim()) {
+            await connectWithUrl(url.trim());
+        }
+    }, [connectWithUrl]);
     
     return (
         <View style={styles.container}>
@@ -102,9 +128,21 @@ export function EmptySessionsTablet() {
                     </Pressable>
                 </>
             ) : (
-                <Text style={styles.descriptionText}>
-                    Open a new terminal on your computer to start session.
-                </Text>
+                <>
+                    <Text style={styles.descriptionText}>
+                        Open a new terminal on your computer to start session.
+                    </Text>
+                    {showManualTerminalAuth && (
+                        <View style={styles.manualButtonWrapper}>
+                            <RoundButton
+                                title={t('connect.enterUrlManually')}
+                                size="normal"
+                                loading={isLoading}
+                                onPress={promptForTerminalUrl}
+                            />
+                        </View>
+                    )}
+                </>
             )}
         </View>
     );

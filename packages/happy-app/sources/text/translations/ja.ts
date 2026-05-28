@@ -85,12 +85,14 @@ export const ja: TranslationStructure = {
         permissionRequired: '権限が必要です',
         activeNow: 'アクティブ',
         unknown: '不明',
+        unread: '新しい結果',
     },
 
     time: {
         justNow: 'たった今',
         minutesAgo: ({ count }: { count: number }) => `${count}分前`,
         hoursAgo: ({ count }: { count: number }) => `${count}時間前`,
+        daysAgo: ({ count }: { count: number }) => `${count}日前`,
     },
 
     connect: {
@@ -106,6 +108,8 @@ export const ja: TranslationStructure = {
         connectAccount: 'アカウントを接続',
         github: 'GitHub',
         machines: 'マシン',
+        showOfflineMachines: ({ count }: { count: number }) => `${count} 台のオフラインマシンを表示`,
+        hideOfflineMachines: 'オフラインマシンを非表示',
         features: '機能',
         social: 'ソーシャル',
         account: 'アカウント',
@@ -170,6 +174,12 @@ export const ja: TranslationStructure = {
         showLineNumbersInToolViewsDescription: 'ツールビューの差分に行番号を表示',
         wrapLinesInDiffs: '差分で行を折り返し',
         wrapLinesInDiffsDescription: '差分表示で水平スクロールの代わりに長い行を折り返す',
+        diffStyle: '差分表示',
+        diffStyleDescription: '差分を1列（unified）または横並び（split）で表示します。split 表示は Web 専用です。',
+        diffStyleOptions: {
+            unified: 'Unified',
+            split: 'Split',
+        },
         alwaysShowContextSize: '常にコンテキストサイズを表示',
         alwaysShowContextSizeDescription: '上限に近づいていなくてもコンテキスト使用量を表示',
         avatarStyle: 'アバタースタイル',
@@ -181,8 +191,6 @@ export const ja: TranslationStructure = {
         },
         showFlavorIcons: 'AIプロバイダーアイコンを表示',
         showFlavorIconsDescription: 'セッションアバターにAIプロバイダーアイコンを表示',
-        compactSessionView: 'コンパクトセッション表示',
-        compactSessionViewDescription: 'アクティブなセッションをコンパクトなレイアウトで表示',
     },
 
     settingsFeatures: {
@@ -204,6 +212,13 @@ export const ja: TranslationStructure = {
         markdownCopyV2Subtitle: '長押しでコピーモーダルを開く',
         hideInactiveSessions: '非アクティブセッションを非表示',
         hideInactiveSessionsSubtitle: 'アクティブなチャットのみをリストに表示',
+        privacy: 'プライバシー',
+        privacyDescription: 'すべての分析とテレメトリを完全に無効にします。PostHogやその他のトラッキングサービスにデータは送信されません。',
+        disableAnalytics: '分析を無効化',
+        analyticsDisabled: 'すべてのトラッキングとテレメトリが無効',
+        analyticsEnabled: '匿名の使用状況分析がアクティブ',
+        imageUpload: '画像アップロード',
+        imageUploadSubtitle: 'メッセージに画像を添付してClaudeに分析させる',
     },
 
     errors: {
@@ -276,6 +291,24 @@ export const ja: TranslationStructure = {
         inputPlaceholder: 'メッセージを入力...',
         inactiveArchived: 'このセッションは非アクティブです。',
         resumeFromTerminal: 'ターミナルから再開するには:',
+        newChat: '新規チャット',
+        forkAction: 'セッションをフォーク',
+        forkSubtitle: '同じコンテキストで新しいセッションを続行',
+        duplicateAction: 'メッセージから複製…',
+        duplicateSubtitle: '選んだ地点まで巻き戻してやり直す',
+        forkFromHere: 'ここからフォーク',
+        duplicateSheetTitle: '巻き戻しポイントを選択',
+        duplicateSheetSubtitle: '新しいセッションは選んだターン全体（あなたのメッセージとエージェントの応答）を保持し、それ以降のメッセージは破棄します。',
+        duplicateSheetConfirm: '複製',
+        duplicateSheetEmpty: 'このセッションには巻き戻し可能なメッセージがまだありません。',
+        duplicateRowDisabled: 'このメッセージは巻き戻しポイントに使えません。',
+        forkedFromLabel: 'フォーク元',
+        forkedFromSubtitle: 'フォーク元のセッションを開く',
+        forkErrorOffline: 'マシンがオフラインです。セッションのマシンがオンラインの間のみフォークできます。',
+        forkErrorMissingUuid: '選んだ巻き戻しポイントがソースセッションに存在しません — 切り詰めなしのフォークをお試しください。',
+        forkErrorMissingMetadata: 'フォークに必要なセッションのメタデータがありません。',
+        forkErrorGeneric: 'セッションのフォークに失敗しました。',
+        forkClaudeOnly: 'フォークは現在 Claude セッションのみ対応しています。',
     },
 
     commandPalette: {
@@ -372,9 +405,12 @@ export const ja: TranslationStructure = {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
             readyToCode: 'コーディングを始めますか？',
+            connectCli: 'Happy CLIに接続',
             installCli: 'Happy CLIをインストール',
             runIt: '実行する',
+            runCliAuth: 'happy auth login または happy を実行',
             scanQrCode: 'QRコードをスキャン',
+            pasteTerminalUrl: 'ターミナルURLを貼り付け',
             openCamera: 'カメラを開く',
         },
     },
@@ -455,6 +491,11 @@ export const ja: TranslationStructure = {
         sessionsTitle: 'Happy',
         showArchived: 'アーカイブを表示',
         hideArchived: 'アーカイブを非表示',
+        newSession: '新しいセッション',
+    },
+
+    zen: {
+        toggle: 'Zenモード',
     },
 
     toolView: {
@@ -529,6 +570,8 @@ export const ja: TranslationStructure = {
     },
 
     files: {
+        directory: 'ディレクトリ',
+        changes: '変更',
         searchPlaceholder: 'ファイルを検索...',
         detachedHead: 'detached HEAD',
         summary: ({ staged, unstaged }: { staged: number; unstaged: number }) => `ステージ済み ${staged} • 未ステージ ${unstaged}`,
@@ -537,6 +580,13 @@ export const ja: TranslationStructure = {
         searching: 'ファイルを検索中...',
         noFilesFound: 'ファイルが見つかりません',
         noFilesInProject: 'プロジェクトにファイルがありません',
+        emptyDirectory: '空のディレクトリ',
+        uploadToThisDirectory: 'Upload to this directory',
+        uploadToProjectRoot: 'Upload to project root',
+        downloadFile: 'Download file',
+        uploading: 'Uploading...',
+        downloading: 'Downloading...',
+        typeAtLeastCharacters: ({ count }: { count: number }) => `${count}文字以上入力してください`,
         tryDifferentTerm: '別の検索語を試してください',
         searchResults: ({ count }: { count: number }) => `検索結果 (${count})`,
         projectRoot: 'プロジェクトルート',
@@ -550,7 +600,19 @@ export const ja: TranslationStructure = {
         file: 'ファイル',
         fileEmpty: 'ファイルは空です',
         noChanges: '表示する変更はありません',
+        noChangesTitle: '変更なし',
+        noChangesSubtitle: 'ワーキングツリーはクリーンです',
         deleted: '削除済み',
+        changedFiles: ({ count }: { count: number }) => `${count}件の変更ファイル`,
+        allFiles: 'すべてのファイル',
+        editFile: '編集',
+        saveFile: '保存',
+        failedToRead: 'ファイルの読み取りに失敗しました',
+        failedToSave: 'ファイルの保存に失敗しました',
+        fileConflict: 'ファイルの競合',
+        fileConflictDescription: '編集中にデバイス上でファイルが変更されました。最新版を表示するには再読み込みしてください。',
+        reload: '再読み込み',
+        overwrite: '上書き',
     },
 
     settingsVoice: {
@@ -761,6 +823,12 @@ export const ja: TranslationStructure = {
         lastDetected: '最終検出',
         untitledSession: '無題のセッション',
         back: '戻る',
+        dangerZone: '危険ゾーン',
+        delete: 'マシンを削除',
+        deleteFooter: 'このマシンをアカウントから削除します。セッション履歴は保持されますが、このマシンで新しいセッションを起動できなくなります。',
+        deleteConfirmTitle: 'このマシンを削除しますか？',
+        deleteConfirmMessage: 'マシンがアカウントから削除されます。セッション履歴は保持されますが、デーモンを再接続するまで新しいセッションを起動できません。',
+        deleteFailed: 'マシンの削除に失敗しました。',
     },
 
     message: {
@@ -897,6 +965,21 @@ export const ja: TranslationStructure = {
         usageOverTime: '使用量の推移',
         byModel: 'モデル別',
         noData: '使用データがありません',
+    },
+
+    imageUpload: {
+        permissionTitle: 'フォトライブラリへのアクセス',
+        permissionMessage: 'メッセージに画像を添付するには、フォトライブラリへのアクセスを許可してください。',
+        limitTitle: '画像の上限に達しました',
+        limitMessage: ({ max }: { max: number }) => `1メッセージに添付できる画像は最大${max}枚です。`,
+        fileTooLargeTitle: 'ファイルが大きすぎます',
+        fileTooLargeMessage: ({ name, maxMb }: { name: string; maxMb: number }) => `"${name}"は${maxMb}MBの制限を超えているため追加されませんでした。`,
+        uploadFailedTitle: 'アップロードに失敗しました',
+        uploadFailedMessage: ({ count }: { count: number }) => count === 1
+            ? '1枚の画像をアップロードできず、送信されませんでした。'
+            : `${count}枚の画像をアップロードできず、送信されませんでした。`,
+        notSupportedTitle: '画像はサポートされていません',
+        notSupportedMessage: 'このエージェントは画像の添付に対応していません。テキストのみが送信されました。',
     },
 
     feed: {

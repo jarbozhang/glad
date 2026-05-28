@@ -1,4 +1,4 @@
-import { View, ScrollView, Pressable, Platform, Linking } from 'react-native';
+import { View, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import * as React from 'react';
 import { Text } from '@/components/StyledText';
@@ -28,6 +28,7 @@ import { useProfile } from '@/sync/storage';
 import { getDisplayName, getAvatarUrl, getBio } from '@/sync/profile';
 import { Avatar } from '@/components/Avatar';
 import { t } from '@/text';
+import { getConnectTerminalMode } from '@/utils/connectTerminalMode';
 
 export const SettingsView = React.memo(function SettingsView() {
     const { theme } = useUnistyles();
@@ -38,11 +39,25 @@ export const SettingsView = React.memo(function SettingsView() {
     const isPro = __DEV__ || useEntitlement('pro');
     const experiments = useSetting('experiments');
     const isCustomServer = isUsingCustomServer();
-    const allMachines = useAllMachines();
+    const [showOfflineMachines, setShowOfflineMachines] = React.useState(false);
+    const allMachinesWithOffline = useAllMachines({ includeOffline: true });
+    const offlineMachineCount = React.useMemo(
+        () => allMachinesWithOffline.filter(m => !isMachineOnline(m)).length,
+        [allMachinesWithOffline]
+    );
+    const visibleMachines = React.useMemo(
+        () => showOfflineMachines
+            ? allMachinesWithOffline
+            : allMachinesWithOffline.filter(isMachineOnline),
+        [allMachinesWithOffline, showOfflineMachines]
+    );
     const profile = useProfile();
     const displayName = getDisplayName(profile);
     const avatarUrl = getAvatarUrl(profile);
     const bio = getBio(profile);
+    const connectTerminalMode = getConnectTerminalMode();
+    const showConnectTerminal = connectTerminalMode !== 'hidden';
+    const showScanner = connectTerminalMode === 'scanner-and-manual';
 
     const { connectTerminal, connectWithUrl, isLoading } = useConnectTerminal();
 
@@ -166,16 +181,18 @@ export const SettingsView = React.memo(function SettingsView() {
                 </View>
             </View>
 
-            {/* Connect Terminal - Only show on native platforms */}
-            {Platform.OS !== 'web' && (
+            {/* Connect Terminal */}
+            {showConnectTerminal && (
                 <ItemGroup>
-                    <Item
-                        title={t('settings.scanQrCodeToAuthenticate')}
-                        icon={<Ionicons name="qr-code-outline" size={29} color="#007AFF" />}
-                        onPress={connectTerminal}
-                        loading={isLoading}
-                        showChevron={false}
-                    />
+                    {showScanner && (
+                        <Item
+                            title={t('settings.scanQrCodeToAuthenticate')}
+                            icon={<Ionicons name="qr-code-outline" size={29} color="#007AFF" />}
+                            onPress={connectTerminal}
+                            loading={isLoading}
+                            showChevron={false}
+                        />
+                    )}
                     <Item
                         title={t('connect.enterUrlManually')}
                         icon={<Ionicons name="link-outline" size={29} color="#007AFF" />}
@@ -189,9 +206,10 @@ export const SettingsView = React.memo(function SettingsView() {
                                 }
                             );
                             if (url?.trim()) {
-                                connectWithUrl(url.trim());
+                                await connectWithUrl(url.trim());
                             }
                         }}
+                        loading={!showScanner && isLoading}
                         showChevron={false}
                     />
                 </ItemGroup>
@@ -256,9 +274,9 @@ export const SettingsView = React.memo(function SettingsView() {
             </ItemGroup> */}
 
             {/* Machines (sorted: online first, then last seen desc) */}
-            {allMachines.length > 0 && (
+            {allMachinesWithOffline.length > 0 && (
                 <ItemGroup title={t('settings.machines')}>
-                    {[...allMachines].map((machine) => {
+                    {visibleMachines.map((machine) => {
                         const isOnline = isMachineOnline(machine);
                         const host = machine.metadata?.host || 'Unknown';
                         const displayName = machine.metadata?.displayName;
@@ -293,6 +311,19 @@ export const SettingsView = React.memo(function SettingsView() {
                             />
                         );
                     })}
+                    {offlineMachineCount > 0 && (
+                        <Item
+                            title={showOfflineMachines
+                                ? t('settings.hideOfflineMachines')
+                                : t('settings.showOfflineMachines', { count: offlineMachineCount })}
+                            onPress={() => setShowOfflineMachines(v => !v)}
+                            showChevron={false}
+                            titleStyle={{
+                                textAlign: 'center',
+                                color: theme.colors.textLink,
+                            }}
+                        />
+                    )}
                 </ItemGroup>
             )}
 

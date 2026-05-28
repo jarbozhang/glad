@@ -41,7 +41,18 @@ export default {
             infoPlist: {
                 NSMicrophoneUsageDescription: "Allow $(PRODUCT_NAME) to access your microphone for voice conversations with AI.",
                 NSLocalNetworkUsageDescription: "Allow $(PRODUCT_NAME) to find and connect to local devices on your network.",
-                NSBonjourServices: ["_http._tcp", "_https._tcp"]
+                NSBonjourServices: ["_http._tcp", "_https._tcp"],
+                // ATS:
+                // - NSAllowsLocalNetworking: lets HTTP fetches reach LAN
+                //   addresses (e.g. self-hosted server at 192.168.x.y) without
+                //   forcing TLS. Production cloud server is HTTPS, so the
+                //   default policy still applies there.
+                // - In dev/preview only, allow arbitrary HTTP loads so a
+                //   developer pointing the app at their machine doesn't have
+                //   to ship a TLS cert just to test attachment uploads.
+                NSAppTransportSecurity: variant === 'production'
+                    ? { NSAllowsLocalNetworking: true }
+                    : { NSAllowsLocalNetworking: true, NSAllowsArbitraryLoads: true }
             },
             associatedDomains: variant === 'production' ? ["applinks:app.happy.engineering"] : []
         },
@@ -52,6 +63,7 @@ export default {
                 backgroundColor: "#18171C"
             },
             permissions: [
+                "android.permission.CAMERA",
                 "android.permission.RECORD_AUDIO",
                 "android.permission.MODIFY_AUDIO_SETTINGS",
                 "android.permission.ACCESS_NETWORK_STATE",
@@ -89,6 +101,7 @@ export default {
         },
         plugins: [
             require("./plugins/withEinkCompatibility.js"),
+            require("./plugins/withAndroidCameraBarcodeScannerDisabled.js"),
             [
                 "expo-router",
                 {
@@ -101,7 +114,6 @@ export default {
             "expo-mail-composer",
             "expo-secure-store",
             "expo-web-browser",
-            "react-native-vision-camera",
             "@more-tech/react-native-libsodium",
             "react-native-audio-api",
             "@livekit/react-native-expo-plugin",

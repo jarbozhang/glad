@@ -12,6 +12,7 @@ import { layout } from '@/components/layout';
 import { t } from '@/text';
 import { FileIcon } from '@/components/FileIcon';
 import { resolveSessionFilePath } from '@/utils/sessionFileLinks';
+import { isPathNonPreviewable } from '@/utils/filePreviewGuards';
 
 interface FileContent {
     content: string;
@@ -175,22 +176,6 @@ export default React.memo(function FileScreen() {
         }
     }, []);
 
-    // Check if file is likely binary based on extension
-    const isBinaryFile = React.useCallback((path: string): boolean => {
-        const ext = path.split('.').pop()?.toLowerCase();
-        const binaryExtensions = [
-            'png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'ico',
-            'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm',
-            'mp3', 'wav', 'flac', 'aac', 'ogg',
-            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-            'zip', 'tar', 'gz', 'rar', '7z',
-            'exe', 'dmg', 'deb', 'rpm',
-            'woff', 'woff2', 'ttf', 'otf',
-            'db', 'sqlite', 'sqlite3'
-        ];
-        return ext ? binaryExtensions.includes(ext) : false;
-    }, []);
-
     // Load file content (fetches in background even if cache exists)
     React.useEffect(() => {
         let isCancelled = false;
@@ -203,7 +188,7 @@ export default React.memo(function FileScreen() {
                 }
                 setError(null);
 
-                if (isBinaryFile(filePath)) {
+                if (isPathNonPreviewable(filePath)) {
                     if (!isCancelled) {
                         setFileContent({ content: '', encoding: 'base64', isBinary: true });
                         storage.getState().applyFileCache(sessionId!, filePath, '', null, true);
@@ -278,7 +263,7 @@ export default React.memo(function FileScreen() {
         return () => {
             isCancelled = true;
         };
-    }, [filePath, gitDiffPath, isBinaryFile, sessionId, sessionPath]);
+    }, [filePath, gitDiffPath, sessionId, sessionPath]);
 
     // Show error modal if there's an error
     React.useEffect(() => {
@@ -482,7 +467,7 @@ export default React.memo(function FileScreen() {
             <ScrollView
                 ref={scrollViewRef}
                 style={{ flex: 1 }}
-                contentContainerStyle={{ padding: 16 }}
+                contentContainerStyle={{ padding: 16, maxWidth: layout.maxWidth, alignSelf: 'center', width: '100%' }}
                 showsVerticalScrollIndicator={true}
             >
                 {displayMode === 'diff' && diffContent ? (
@@ -519,9 +504,9 @@ export default React.memo(function FileScreen() {
 
 const styles = StyleSheet.create((theme) => ({
     container: {
+        // Header (file path + toggle) spans the full screen width;
+        // the code/diff body is bounded by layout.maxWidth on the ScrollView's
+        // contentContainerStyle so it lines up with the chat / changes views.
         flex: 1,
-        maxWidth: layout.maxWidth,
-        alignSelf: 'center',
-        width: '100%',
     }
 }));

@@ -1,18 +1,9 @@
 import * as React from "react";
 import { Canvas, Rect, Group, Skia } from "@shopify/react-native-skia";
+import { hashAvatarValue } from './avatarUtils';
 
 const ELEMENTS = 64;
 const GRID_SIZE = 8; // 8x8 grid
-
-function hashCode(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash);
-}
 
 function getRandomColor(number: number, colors?: string[], range?: number): string {
     if (colors && range) {
@@ -31,8 +22,8 @@ function hslToGrayscale(hslColor: string): string {
     return `hsl(0, 0%, ${lightness}%)`;
 }
 
-function generateColors(name: string, colors?: string[], monochrome?: boolean): string[] {
-    const numFromName = hashCode(name);
+function generateColors(name: unknown, colors?: string[], monochrome?: boolean): string[] {
+    const numFromName = hashAvatarValue(name);
     const range = colors?.length;
 
     const colorList = Array.from({ length: ELEMENTS }, (_, i) => {
@@ -44,7 +35,7 @@ function generateColors(name: string, colors?: string[], monochrome?: boolean): 
 }
 
 interface AvatarProps {
-    id: string;
+    id?: string | null;
     title?: boolean;
     square?: boolean;
     size?: number;

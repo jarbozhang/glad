@@ -1,11 +1,10 @@
 import * as React from 'react';
-import { Platform } from 'react-native';
-import { CameraView } from 'expo-camera';
 import { useAuth } from '@/auth/AuthContext';
 import { decodeBase64 } from '@/encryption/base64';
 import { encryptBox } from '@/encryption/libsodium';
 import { authApprove } from '@/auth/authApprove';
 import { useCheckScannerPermissions } from '@/hooks/useCheckCameraPermissions';
+import { cancelScanQrCode, scanQrCode } from '@/native/qrScanner';
 import { Modal } from '@/modal';
 import { t } from '@/text';
 import { sync } from '@/sync/sync';
@@ -36,7 +35,13 @@ export function useConnectTerminal(options?: UseConnectTerminalOptions) {
             responseV2Bundle.set(sync.encryption.contentDataKey, 1);
             const responseV2 = encryptBox(responseV2Bundle, publicKey);
             await authApprove(auth.credentials!.token, publicKey, responseV1, responseV2);
-            
+            void Promise.all([
+                sync.refreshMachines(),
+                sync.refreshSessions()
+            ]).catch((refreshError) => {
+                console.warn('Failed to refresh terminal connection state', refreshError);
+            });
+
             Modal.alert(t('common.success'), t('modals.terminalConnectedSuccessfully'), [
                 { 
                     text: t('common.ok'), 
@@ -56,52 +61,28 @@ export function useConnectTerminal(options?: UseConnectTerminalOptions) {
 
     const connectTerminal = React.useCallback(async () => {
         if (await checkScannerPermissions()) {
-            // Use camera scanner
-            CameraView.launchScanner({
-                barcodeTypes: ['qr']
-            });
+            try {
+                const scannedData = await scanQrCode();
+                if (scannedData) {
+                    await processAuthUrl(scannedData);
+                }
+            } catch (e) {
+                console.warn('Failed to scan QR code', e);
+            }
         } else {
             Modal.alert(t('common.error'), t('modals.cameraPermissionsRequiredToConnectTerminal'), [{ text: t('common.ok') }]);
         }
-    }, [checkScannerPermissions]);
+    }, [checkScannerPermissions, processAuthUrl]);
 
     const connectWithUrl = React.useCallback(async (url: string) => {
         return await processAuthUrl(url);
     }, [processAuthUrl]);
 
-    // Set up barcode scanner listener
-    const isProcessingRef = React.useRef(false);
     React.useEffect(() => {
-        if (CameraView.isModernBarcodeScannerAvailable) {
-            const subscription = CameraView.onModernBarcodeScanned(async (event) => {
-                if (isProcessingRef.current) return;
-                if (event.data.startsWith('happy://terminal?')) {
-                    isProcessingRef.current = true;
-                    try {
-                        if (Platform.OS === 'ios') {
-                            try {
-                                await CameraView.dismissScanner();
-                            } catch (e) {
-                                console.warn('Failed to dismiss scanner', e);
-                            }
-                        }
-                        await processAuthUrl(event.data);
-                    } finally {
-                        isProcessingRef.current = false;
-                    }
-                }
-            });
-            return () => {
-                subscription.remove();
-                isProcessingRef.current = false;
-                if (Platform.OS === 'ios') {
-                    CameraView.dismissScanner().catch((e: unknown) => {
-                        console.warn('Failed to dismiss scanner during cleanup', e);
-                    });
-                }
-            };
-        }
-    }, [processAuthUrl]);
+        return () => {
+            cancelScanQrCode();
+        };
+    }, []);
 
     return {
         connectTerminal,

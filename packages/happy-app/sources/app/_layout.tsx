@@ -14,7 +14,7 @@ import { initialWindowMetrics, SafeAreaProvider, useSafeAreaInsets } from 'react
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SidebarNavigator } from '@/components/SidebarNavigator';
 import sodium from '@/encryption/libsodium.lib';
-import { View, Platform } from 'react-native';
+import { View, Platform, AppState } from 'react-native';
 import { ModalProvider } from '@/modal';
 import { PostHogProvider } from 'posthog-react-native';
 import { tracking } from '@/track/tracking';
@@ -29,29 +29,44 @@ import { initConsoleLogging, setConsoleOutputEnabled } from '@/utils/consoleLogg
 import { useLocalSetting } from '@/sync/storage';
 import { useUnistyles } from 'react-native-unistyles';
 import { AsyncLock } from '@/utils/lock';
+import { isTauri } from '@/utils/platform';
 import { getSessionRouteFromNotificationResponse } from '@/utils/notificationRouting';
 import { navigateToSession } from '@/hooks/useNavigateToSession';
 import { applyVoiceUpsellOverride } from '@/realtime/voiceExperiment';
+import { useTauriZoom } from '@/hooks/useTauriZoom';
+import { useTauriDrag } from '@/hooks/useTauriDrag';
 
-// Configure notification handler for foreground notifications
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
-
-// Setup Android notification channel (required for Android 8.0+)
-if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
+// Configure notification handler for foreground notifications.
+// Skip in Tauri because expo-notifications native module is not available in the webview.
+if (!isTauri()) {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => {
+            const isForeground = AppState.currentState === 'active';
+            return {
+                shouldShowAlert: !isForeground,
+                shouldPlaySound: !isForeground,
+                shouldSetBadge: true,
+                shouldShowBanner: !isForeground,
+                shouldShowList: true,
+            };
+        },
     });
+
+    // Setup Android notification channels (required for Android 8.0+)
+    if (Platform.OS === 'android') {
+        Notifications.setNotificationChannelAsync('default', {
+            name: 'Default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+        Notifications.setNotificationChannelAsync('messages', {
+            name: 'Messages',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+    }
 }
 
 export {
@@ -64,7 +79,9 @@ SplashScreen.setOptions({
     fade: true,
     duration: 300,
 })
-SplashScreen.preventAutoHideAsync();
+if (!isTauri()) {
+    SplashScreen.preventAutoHideAsync();
+}
 
 // Set window background color - now handled by Unistyles
 // SystemUI.setBackgroundColorAsync('white');
@@ -104,61 +121,34 @@ async function loadFonts() {
             return;
         }
         loaded = true;
-        // Check if running in Tauri
-        const isTauri = Platform.OS === 'web' &&
-            typeof window !== 'undefined' &&
-            (window as any).__TAURI_INTERNALS__ !== undefined;
+        const fontAssets = {
+            // Keep existing font
+            SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
 
-        if (!isTauri) {
-            // Normal font loading for non-Tauri environments (native and regular web)
-            await Fonts.loadAsync({
-                // Keep existing font
-                SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
+            // IBM Plex Sans family
+            'IBMPlexSans-Regular': require('@/assets/fonts/IBMPlexSans-Regular.ttf'),
+            'IBMPlexSans-Italic': require('@/assets/fonts/IBMPlexSans-Italic.ttf'),
+            'IBMPlexSans-SemiBold': require('@/assets/fonts/IBMPlexSans-SemiBold.ttf'),
 
-                // IBM Plex Sans family
-                'IBMPlexSans-Regular': require('@/assets/fonts/IBMPlexSans-Regular.ttf'),
-                'IBMPlexSans-Italic': require('@/assets/fonts/IBMPlexSans-Italic.ttf'),
-                'IBMPlexSans-SemiBold': require('@/assets/fonts/IBMPlexSans-SemiBold.ttf'),
+            // IBM Plex Mono family
+            'IBMPlexMono-Regular': require('@/assets/fonts/IBMPlexMono-Regular.ttf'),
+            'IBMPlexMono-Italic': require('@/assets/fonts/IBMPlexMono-Italic.ttf'),
+            'IBMPlexMono-SemiBold': require('@/assets/fonts/IBMPlexMono-SemiBold.ttf'),
 
-                // IBM Plex Mono family  
-                'IBMPlexMono-Regular': require('@/assets/fonts/IBMPlexMono-Regular.ttf'),
-                'IBMPlexMono-Italic': require('@/assets/fonts/IBMPlexMono-Italic.ttf'),
-                'IBMPlexMono-SemiBold': require('@/assets/fonts/IBMPlexMono-SemiBold.ttf'),
+            // Bricolage Grotesque
+            'BricolageGrotesque-Bold': require('@/assets/fonts/BricolageGrotesque-Bold.ttf'),
 
-                // Bricolage Grotesque  
-                'BricolageGrotesque-Bold': require('@/assets/fonts/BricolageGrotesque-Bold.ttf'),
+            ...FontAwesome.font,
+        };
 
-                ...FontAwesome.font,
+        if (isTauri()) {
+            Fonts.loadAsync(fontAssets).catch((error) => {
+                console.warn('[fonts] Failed to load fonts in Tauri:', error);
             });
-        } else {
-            // For Tauri, skip Font Face Observer as fonts are loaded via CSS
-            console.log('Do not wait for fonts to load');
-            (async () => {
-                try {
-                    await Fonts.loadAsync({
-                        // Keep existing font
-                        SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
-
-                        // IBM Plex Sans family
-                        'IBMPlexSans-Regular': require('@/assets/fonts/IBMPlexSans-Regular.ttf'),
-                        'IBMPlexSans-Italic': require('@/assets/fonts/IBMPlexSans-Italic.ttf'),
-                        'IBMPlexSans-SemiBold': require('@/assets/fonts/IBMPlexSans-SemiBold.ttf'),
-
-                        // IBM Plex Mono family  
-                        'IBMPlexMono-Regular': require('@/assets/fonts/IBMPlexMono-Regular.ttf'),
-                        'IBMPlexMono-Italic': require('@/assets/fonts/IBMPlexMono-Italic.ttf'),
-                        'IBMPlexMono-SemiBold': require('@/assets/fonts/IBMPlexMono-SemiBold.ttf'),
-
-                        // Bricolage Grotesque  
-                        'BricolageGrotesque-Bold': require('@/assets/fonts/BricolageGrotesque-Bold.ttf'),
-
-                        ...FontAwesome.font,
-                    });
-                } catch (e) {
-                    // Ignore
-                }
-            })();
+            return;
         }
+
+        await Fonts.loadAsync(fontAssets);
     });
 }
 
@@ -192,6 +182,8 @@ function getDevWebQueryCredentials(): AuthCredentials | null {
 }
 
 export default function RootLayout() {
+    useTauriZoom();
+    useTauriDrag();
     const router = useRouter();
     const { theme } = useUnistyles();
     const navigationTheme = React.useMemo(() => {
@@ -314,8 +306,9 @@ export default function RootLayout() {
         }
     }, [router]);
 
+    // Notification response listener — skip in Tauri (expo-notifications not available)
     React.useEffect(() => {
-        if (!initState) {
+        if (!initState || isTauri()) {
             return;
         }
 
@@ -374,7 +367,7 @@ export default function RootLayout() {
 
     let providers = (
         <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <KeyboardProvider>
+            <KeyboardProvider preload={false}>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                     <AuthProvider initialCredentials={initState.credentials}>
                         <ThemeProvider value={navigationTheme}>

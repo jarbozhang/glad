@@ -10,6 +10,10 @@ import { RpcHandlerManager } from '../../api/rpc/RpcHandlerManager';
 import { validatePath } from './pathSecurity';
 
 const execAsync = promisify(exec);
+const EXCLUDED_TREE_DIRS = new Set([
+    'node_modules', '.git', '.next', 'dist', 'build', '.expo', '__pycache__', '.cache',
+]);
+const MAX_TREE_NODES = 5_000;
 
 interface BashRequest {
     command: string;
@@ -87,6 +91,7 @@ interface GetDirectoryTreeResponse {
 interface RipgrepRequest {
     args: string[];
     cwd?: string;
+    maxStdoutBytes?: number;
 }
 
 interface RipgrepResponse {
@@ -94,6 +99,7 @@ interface RipgrepResponse {
     exitCode?: number;
     stdout?: string;
     stderr?: string;
+    truncated?: boolean;
     error?: string;
 }
 
@@ -123,6 +129,18 @@ export interface SpawnSessionOptions {
     agent?: 'claude' | 'codex' | 'gemini' | 'openclaw';
     environmentVariables?: Record<string, string>;
     token?: string;
+    /**
+     * If set, the daemon spawns the agent with `--resume <id>` so the new
+     * Happy session continues from an existing Claude conversation file.
+     * Used by the session fork / duplicate flow: the fork RPC produces a
+     * new Claude JSONL on disk, the spawn RPC then attaches a fresh Happy
+     * session to it.
+     */
+    resumeClaudeSessionId?: string;
+    /** Happy session id this fork was branched from (lineage). */
+    parentSessionId?: string;
+    /** Happy message id used as the rewind point (only set for "duplicate"). */
+    forkedFromMessageId?: string;
 }
 
 export type SpawnSessionResult =
@@ -377,8 +395,17 @@ export function registerCommonHandlers(rpcHandlerManager: RpcHandlerManager, wor
         }
 
         // Helper function to build tree recursively
+        let visitedNodes = 0;
         async function buildTree(path: string, name: string, currentDepth: number): Promise<TreeNode | null> {
             try {
+                if (EXCLUDED_TREE_DIRS.has(name)) {
+                    return null;
+                }
+                if (visitedNodes >= MAX_TREE_NODES) {
+                    return null;
+                }
+                visitedNodes++;
+
                 const stats = await stat(path);
 
                 // Base node information
@@ -466,12 +493,13 @@ export function registerCommonHandlers(rpcHandlerManager: RpcHandlerManager, wor
         }
 
         try {
-            const result = await runRipgrep(data.args, { cwd: data.cwd });
+            const result = await runRipgrep(data.args, { cwd: data.cwd, maxStdoutBytes: data.maxStdoutBytes });
             return {
                 success: true,
                 exitCode: result.exitCode,
                 stdout: result.stdout.toString(),
-                stderr: result.stderr.toString()
+                stderr: result.stderr.toString(),
+                truncated: result.truncated
             };
         } catch (error) {
             logger.debug('Failed to run ripgrep:', error);
